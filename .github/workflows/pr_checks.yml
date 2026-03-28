@@ -1,0 +1,49 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ develop ]
+
+jobs:
+  checks:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Write dummy local.properties
+        run: echo "tvdb_api_key=CI_PLACEHOLDER" >> local.properties
+
+      - name: Run Unit Tests
+        run: ./gradlew test --continue
+
+      - name: Run Lint
+        run: ./gradlew lint
+
+      - name: Assemble Debug
+        run: ./gradlew assembleDebug
+
+      - name: Upload Test Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/'
+          retention-days: 7

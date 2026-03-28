@@ -1,0 +1,29 @@
+# Android
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Keystore — NEVER commit
+*.jks
+*.keystore
+
+# Secrets
+secrets.properties
+
+# Generated
+**/build/
+**/generated/
+
+# Test results
+**/test-results/
+**/reports/

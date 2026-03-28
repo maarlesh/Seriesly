@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- "S" lettermark for Seriesly — brand purple background, white foreground -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,22 C38,22 26,34 26,50 C26,61 33,71 44,75 L58,80 C64,82 68,86 68,92 C68,99 62,105 54,105 C46,105 39,101 35,94 L26,101 C32,111 42,117 54,117 C71,117 83,105 83,92 C83,81 76,71 64,67 L51,62 C45,60 41,56 41,50 C41,43 47,37 54,37 C61,37 67,41 70,47 L79,40 C74,30 65,22 54,22 Z"/>
+</vector>
