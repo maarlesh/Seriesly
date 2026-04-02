@@ -25,6 +25,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.bundles.lifecycle)
     implementation(project(":core:core-ui"))
+    implementation(libs.coil.compose)
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-common"))
     implementation(project(":core:core-data"))

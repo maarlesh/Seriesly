@@ -29,7 +29,7 @@ interface TvdbApiService {
     @GET("series/{id}/extended")
     suspend fun getSeriesExtended(
         @Path("id")     id: Int,
-        @Query("meta")  meta: String = "episodes",
+        @Query("meta")  meta: String = "episodes,translations",
         @Query("short") short: Boolean = false
     ): TvdbResponseDto<SeriesExtendedDto>
 

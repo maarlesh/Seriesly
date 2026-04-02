@@ -2,49 +2,76 @@ package com.seriesly.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ── Brand ──────────────────────────────────────────────────────────────────
-val BrandPurple       = Color(0xFF7C6AF7)
-val BrandPurpleLight  = Color(0xFF5747E8)
-val BrandPurpleDim    = Color(0xFF4A3FA3)
-val BrandTeal         = Color(0xFF03DAC6)
+// ── Backgrounds ───────────────────────────────────────────────────────────────
+val Background              = Color(0xFF050A14)
+val Surface                 = Color(0xFF0B1326)
+val SurfaceDim              = Color(0xFF0B1326)
+val SurfaceContainerLowest  = Color(0xFF060E20)
+val SurfaceContainerLow     = Color(0xFF131B2E)
+val SurfaceContainer        = Color(0xFF171F33)
+val SurfaceContainerHigh    = Color(0xFF222A3D)
+val SurfaceContainerHighest = Color(0xFF2D3449)
+val SurfaceBright           = Color(0xFF31394D)
+val SurfaceVariant          = Color(0xFF2D3449)
 
-// ── Dark Scheme ────────────────────────────────────────────────────────────
-val DarkBackground        = Color(0xFF0F0F13)
-val DarkSurface           = Color(0xFF1C1C24)
-val DarkSurfaceVariant    = Color(0xFF2A2A36)
-val DarkSurfaceContainer  = Color(0xFF232330)
-val DarkOnBackground      = Color(0xFFE6E6F0)
-val DarkOnSurface         = Color(0xFFE6E6F0)
-val DarkOnSurfaceVariant  = Color(0xFFA0A0B8)
-val DarkOutline           = Color(0xFF3D3D52)
-val DarkError             = Color(0xFFCF6679)
-val DarkOnError           = Color(0xFFFFFFFF)
-val DarkErrorContainer    = Color(0xFF5C2028)
+// ── Primary — "Seriesly Blue" ─────────────────────────────────────────────────
+val Primary                 = Color(0xFFADC6FF)  // periwinkle — text/icons on dark
+val PrimaryContainer        = Color(0xFF4D8EFF)  // vivid blue — CTA gradient end
+val OnPrimary               = Color(0xFF002E6A)
+val OnPrimaryContainer      = Color(0xFF00285D)
+val PrimaryFixed            = Color(0xFFD8E2FF)
+val PrimaryFixedDim         = Color(0xFFADC6FF)
+val InversePrimary          = Color(0xFF005AC2)
 
-// ── Light Scheme ───────────────────────────────────────────────────────────
-val LightBackground       = Color(0xFFF5F5FA)
-val LightSurface          = Color(0xFFFFFFFF)
-val LightSurfaceVariant   = Color(0xFFE8E8F4)
-val LightSurfaceContainer = Color(0xFFEEEEF8)
-val LightOnBackground     = Color(0xFF1A1A2E)
-val LightOnSurface        = Color(0xFF1A1A2E)
-val LightOnSurfaceVariant = Color(0xFF5A5A78)
-val LightOutline          = Color(0xFFB0B0CC)
-val LightError            = Color(0xFFB3253A)
-val LightOnError          = Color(0xFFFFFFFF)
-val LightErrorContainer   = Color(0xFFFFDADC)
+// ── Secondary — "Seriesly Green" ─────────────────────────────────────────────
+val Secondary               = Color(0xFF4EDEA3)  // mint green — series / progress
+val SecondaryContainer      = Color(0xFF00A572)
+val OnSecondary             = Color(0xFF003824)
+val OnSecondaryContainer    = Color(0xFF00311F)
+val SecondaryFixed          = Color(0xFF6FFBBE)
+val SecondaryFixedDim       = Color(0xFF4EDEA3)
 
-// ── Tertiary (Movie badge) ─────────────────────────────────────────────────
-val TertiaryAmber      = Color(0xFFFFB74D)
-val TertiaryAmberDark  = Color(0xFFE65100)
+// ── Tertiary — "Seriesly Amber" ───────────────────────────────────────────────
+val Tertiary                = Color(0xFFFFB95F)  // warm amber — ratings, highlights
+val TertiaryContainer       = Color(0xFFCA8100)
+val OnTertiary              = Color(0xFF472A00)
+val OnTertiaryContainer     = Color(0xFF3E2400)
+val TertiaryFixed           = Color(0xFFFFDDB8)
+val TertiaryFixedDim        = Color(0xFFFFB95F)
 
-// ── Animation palette ─────────────────────────────────────────────────────
-/** Warm gold used for watched-state icons and season completion. */
-val WatchedGold        = androidx.compose.ui.graphics.Color(0xFFFFD166)
-val WatchedGoldSubtle  = androidx.compose.ui.graphics.Color(0x26FFD166)
+// ── Surface text ──────────────────────────────────────────────────────────────
+val OnBackground            = Color(0xFFDAE2FD)
+val OnSurface               = Color(0xFFDAE2FD)
+val OnSurfaceVariant        = Color(0xFFC2C6D6)
+val InverseSurface          = Color(0xFFDAE2FD)
+val InverseOnSurface        = Color(0xFF283044)
 
-/** Particle burst colours for the "series complete" celebration. */
-val ParticlePurple = BrandPurple
-val ParticleTeal   = BrandTeal
-val ParticleGold   = WatchedGold
-val ParticlePink   = androidx.compose.ui.graphics.Color(0xFFFF6B9D)
+// ── Borders ───────────────────────────────────────────────────────────────────
+val Outline                 = Color(0xFF8C909F)
+val OutlineVariant          = Color(0xFF424754)
+
+// ── Error ─────────────────────────────────────────────────────────────────────
+val Error                   = Color(0xFFFFB4AB)
+val ErrorContainer          = Color(0xFF93000A)
+val OnError                 = Color(0xFF690005)
+val OnErrorContainer        = Color(0xFFFFDAD6)
+
+// ── Special / semantic ────────────────────────────────────────────────────────
+val SurfaceTint             = Color(0xFFADC6FF)
+
+/** Warm gold kept for legacy particle bursts — prefer Tertiary in new code */
+val WatchedGold             = Color(0xFFFFD166)
+val WatchedGoldSubtle       = Color(0x26FFD166)
+
+/** Series green glow — 50 % alpha for shadow/BoxShadow equivalents */
+val SeriesGreenGlow         = Color(0x804EDEA3)
+
+/** Celebration particle palette */
+val ParticleBlue   = Primary
+val ParticleGreen  = Secondary
+val ParticleAmber  = Tertiary
+val ParticlePink   = Color(0xFFFF6B9D)
+
+// ── Soul gradient stops — use with Brush.linearGradient ───────────────────────
+val SoulGradientStart = Primary          // #ADC6FF
+val SoulGradientEnd   = PrimaryContainer // #4D8EFF

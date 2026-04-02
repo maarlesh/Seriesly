@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.seriesly.core.ui.theme.BrandPurple
+import com.seriesly.core.ui.theme.Primary
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,7 +113,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .size(88.dp)
                             .scale(avatarScale)
-                            .border(3.dp, BrandPurple.copy(alpha = ringAlpha), CircleShape)
+                            .border(3.dp, Primary.copy(alpha = ringAlpha), CircleShape)
                             .padding(4.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary),

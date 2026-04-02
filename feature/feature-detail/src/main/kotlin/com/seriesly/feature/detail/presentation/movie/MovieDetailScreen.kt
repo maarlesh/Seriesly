@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
@@ -21,23 +22,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.seriesly.core.ui.component.AddToWatchlistSheet
 import com.seriesly.core.ui.component.ErrorState
 import com.seriesly.core.ui.component.HeroSkeleton
-import com.seriesly.core.ui.component.PosterImage
 import com.seriesly.core.ui.component.RatingBottomSheet
-import com.seriesly.core.ui.tokens.ContentSize
+import com.seriesly.core.ui.theme.*
+import com.seriesly.core.ui.tokens.Brushes
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
     tvdbId: Int,
@@ -45,7 +49,6 @@ fun MovieDetailScreen(
     viewModel: MovieDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -55,99 +58,144 @@ fun MovieDetailScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(uiState.movie?.title ?: "") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    val bookmarkTint by animateColorAsState(
-                        targetValue   = if (uiState.inWatchlistIds.isNotEmpty())
-                                            MaterialTheme.colorScheme.primary
-                                        else LocalContentColor.current,
-                        animationSpec = tween(250),
-                        label         = "bookmarkTint"
-                    )
-                    IconButton(onClick = { viewModel.onIntent(MovieDetailIntent.ShowWatchlistSheet) }) {
-                        Icon(
-                            imageVector        = if (uiState.inWatchlistIds.isNotEmpty()) Icons.Filled.Bookmark
-                                                 else Icons.Outlined.BookmarkAdd,
-                            contentDescription = "Add to watchlist",
-                            tint               = bookmarkTint
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-    ) { padding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
         when {
             uiState.isLoading && uiState.movie == null ->
-                HeroSkeleton(modifier = Modifier.fillMaxSize().padding(padding))
+                HeroSkeleton(modifier = Modifier.fillMaxSize())
 
             uiState.error != null && uiState.movie == null ->
                 ErrorState(
                     error    = uiState.error!!,
                     onRetry  = {},
-                    modifier = Modifier.fillMaxSize().padding(padding)
+                    modifier = Modifier.fillMaxSize()
                 )
 
             uiState.movie != null -> {
                 val movie = uiState.movie!!
-                LazyColumn(contentPadding = padding) {
+
+                LazyColumn(contentPadding = PaddingValues(bottom = 100.dp)) {
+
+                    // ── Hero ─────────────────────────────────────────────────
                     item {
-                        Box(Modifier.fillMaxWidth().height(250.dp)) {
-                            PosterImage(
-                                url                = movie.backdropUrl,
-                                contentDescription = movie.title,
-                                modifier           = Modifier.fillMaxSize(),
-                                width              = 600.dp,
-                                height             = 250.dp
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(530.dp)
+                        ) {
+                            // Backdrop / poster image — fills to very top of screen
+                            AsyncImage(
+                                model              = movie.backdropUrl ?: movie.posterUrl,
+                                contentDescription = null,
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier.fillMaxSize()
                             )
-                            // Gradient scrim over backdrop bottom
+                            // Hero scrim
                             Box(
-                                Modifier
+                                modifier = Modifier
                                     .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.background
-                                            )
-                                        )
-                                    )
+                                    .background(Brushes.HeroScrim)
                             )
-                            PosterImage(
-                                url                = movie.posterUrl,
-                                contentDescription = movie.title,
-                                modifier           = Modifier
+
+                            // Poster + metadata row floating at bottom of hero
+                            Row(
+                                modifier = Modifier
                                     .align(Alignment.BottomStart)
-                                    .padding(16.dp),
-                                width              = ContentSize.posterDetailWidth,
-                                height             = ContentSize.posterDetailHeight,
-                                withShadow         = true
-                            )
+                                    .padding(horizontal = 20.dp, vertical = 0.dp)
+                                    .offset(y = 32.dp),
+                                verticalAlignment     = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Poster card
+                                Box(
+                                    modifier = Modifier
+                                        .width(104.dp)
+                                        .aspectRatio(2f / 3f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(SurfaceContainerHighest)
+                                        .drawBehind {
+                                            drawRect(
+                                                Brush.verticalGradient(
+                                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                                                )
+                                            )
+                                        }
+                                ) {
+                                    AsyncImage(
+                                        model              = movie.posterUrl,
+                                        contentDescription = movie.title,
+                                        contentScale       = ContentScale.Crop,
+                                        modifier           = Modifier.fillMaxSize()
+                                    )
+                                }
+
+                                // Metadata
+                                Column(
+                                    modifier = Modifier.padding(bottom = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    // Status badge
+                                    movie.status?.let { status ->
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(50))
+                                                .background(Primary.copy(alpha = 0.10f))
+                                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text  = status.uppercase(),
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = Primary
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text     = movie.title,
+                                        style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                        color    = OnSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment     = Alignment.CenterVertically
+                                    ) {
+                                        movie.year?.let {
+                                            Text(
+                                                text  = "$it",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = OnSurfaceVariant
+                                            )
+                                        }
+                                        movie.runtimeMinutes?.let {
+                                            Text(
+                                                text  = "${it}m",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = OnSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    // Extra space for floating poster overlap
+                    item { Spacer(Modifier.height(48.dp)) }
+
+                    // ── Action Card ───────────────────────────────────────────
                     item {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(movie.title, style = MaterialTheme.typography.headlineMedium)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                movie.year?.let { Text("$it", style = MaterialTheme.typography.bodySmall) }
-                                movie.runtimeMinutes?.let { Text("${it}m", style = MaterialTheme.typography.bodySmall) }
-                                movie.status?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                            }
-
-                            Spacer(Modifier.height(16.dp))
-
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment     = Alignment.CenterVertically
@@ -156,33 +204,104 @@ fun MovieDetailScreen(
                                     isWatched = uiState.isWatched,
                                     onClick   = { viewModel.onIntent(MovieDetailIntent.ToggleWatched) }
                                 )
-                                if (uiState.userRating != null) {
-                                    AssistChip(
-                                        onClick = { viewModel.onIntent(MovieDetailIntent.ShowRatingSheet) },
-                                        label   = { Text("\u2605 ${"%.1f".format(uiState.userRating)}") }
+                                AssistChip(
+                                    onClick = { viewModel.onIntent(MovieDetailIntent.ShowRatingSheet) },
+                                    label   = {
+                                        Text(
+                                            if (uiState.userRating != null)
+                                                "★ ${"%.1f".format(uiState.userRating)}"
+                                            else "Rate"
+                                        )
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = SurfaceContainerHigh,
+                                        labelColor     = if (uiState.userRating != null) Tertiary else OnSurfaceVariant
                                     )
-                                } else {
-                                    AssistChip(
-                                        onClick = { viewModel.onIntent(MovieDetailIntent.ShowRatingSheet) },
-                                        label   = { Text("Rate") }
+                                )
+                                // Watchlist button
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Primary.copy(alpha = 0.15f))
+                                        .clickable { viewModel.onIntent(MovieDetailIntent.ShowWatchlistSheet) }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector        = if (uiState.inWatchlistIds.isNotEmpty())
+                                                                Icons.Filled.Bookmark
+                                                            else Icons.Outlined.BookmarkAdd,
+                                        contentDescription = "Watchlist",
+                                        tint               = Primary,
+                                        modifier           = Modifier.size(18.dp)
                                     )
                                 }
                             }
+                        }
+                    }
 
-                            Spacer(Modifier.height(12.dp))
+                    // ── Genres & Overview ─────────────────────────────────────
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             if (movie.genres.isNotEmpty()) {
                                 Text(
-                                    text  = movie.genres.joinToString(" · "),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text  = "GENRE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Outline
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text  = movie.genres.joinToString(" · "),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Primary
+                                )
                             }
-                            Text(movie.overview, style = MaterialTheme.typography.bodyMedium)
+                            if (movie.overview.isNotBlank()) {
+                                Text(
+                                    text  = "SYNOPSIS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Outline
+                                )
+                                Text(
+                                    text  = movie.overview,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = OnSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+
+        // Glass top app bar (floating) — identical pattern to SeriesDetailScreen
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopStart)
+                .background(Surface.copy(alpha = 0.40f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = Primary)
+            }
+            Text(
+                text  = "Seriesly",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                color = Primary
+            )
+            // spacer to balance layout
+            Box(Modifier.size(48.dp))
         }
     }
 
@@ -236,8 +355,8 @@ private fun WatchedChip(isWatched: Boolean, onClick: () -> Unit) {
                 onClick()
             }
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment      = Alignment.CenterVertically,
-        horizontalArrangement  = Arrangement.spacedBy(6.dp)
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (isWatched || iconScale > 0f) {
             Icon(

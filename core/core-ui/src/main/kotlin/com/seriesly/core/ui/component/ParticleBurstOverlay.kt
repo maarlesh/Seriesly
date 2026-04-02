@@ -11,10 +11,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import com.seriesly.core.ui.theme.ParticleGold
+import com.seriesly.core.ui.theme.ParticleAmber
+import com.seriesly.core.ui.theme.ParticleBlue
+import com.seriesly.core.ui.theme.ParticleGreen
 import com.seriesly.core.ui.theme.ParticlePink
-import com.seriesly.core.ui.theme.ParticlePurple
-import com.seriesly.core.ui.theme.ParticleTeal
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -28,7 +28,7 @@ private data class Particle(
 
 @Composable
 fun ParticleBurstOverlay(onComplete: () -> Unit) {
-    val particleColors = listOf(ParticlePurple, ParticleTeal, ParticleGold, ParticlePink)
+    val particleColors = listOf(ParticleBlue, ParticleGreen, ParticleAmber, ParticlePink)
     val particles = remember {
         List(24) { i ->
             Particle(

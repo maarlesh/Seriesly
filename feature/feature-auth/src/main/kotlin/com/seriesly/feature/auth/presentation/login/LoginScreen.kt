@@ -1,17 +1,21 @@
 package com.seriesly.feature.auth.presentation.login
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
@@ -20,16 +24,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.seriesly.core.ui.theme.BrandPurple
-import com.seriesly.core.ui.theme.BrandPurpleDim
+import com.seriesly.core.ui.theme.*
+import com.seriesly.core.ui.tokens.Brushes
 
 @Composable
 fun LoginScreen(
@@ -48,33 +57,32 @@ fun LoginScreen(
         }
     }
 
-    // Drive sequential entry animations
-    var launched by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { launched = true }
-
-    val logoScale by animateFloatAsState(
-        targetValue   = if (launched) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
-        label         = "logoScale"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Background)
     ) {
-        // Radial gradient background glow
+        // Ambient glow — top-right primary blob
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .size(480.dp)
+                .offset(x = 100.dp, y = (-100).dp)
+                .align(Alignment.TopEnd)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(
-                            BrandPurpleDim.copy(alpha = 0.25f),
-                            Color.Transparent
-                        ),
-                        center = Offset(0.5f, 0f),
-                        radius = 800f
+                        colors = listOf(Primary.copy(alpha = 0.10f), Color.Transparent)
+                    )
+                )
+        )
+        // Ambient glow — bottom-left secondary blob
+        Box(
+            modifier = Modifier
+                .size(320.dp)
+                .offset(x = (-60).dp, y = 60.dp)
+                .align(Alignment.BottomStart)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Secondary.copy(alpha = 0.05f), Color.Transparent)
                     )
                 )
         )
@@ -82,137 +90,235 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo
+            Spacer(Modifier.height(48.dp))
+
+            // Brand header
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .scale(logoScale)
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .background(BrandPurple),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Brushes.SoulGradient),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector        = Icons.Filled.Tv,
+                    imageVector        = Icons.Filled.Movie,
                     contentDescription = null,
-                    tint               = Color.White,
-                    modifier           = Modifier.size(36.dp)
+                    tint               = OnPrimaryContainer,
+                    modifier           = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Text(
+                text  = "Seriesly",
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontStyle  = FontStyle.Italic
+                ),
+                color = Primary
+            )
+            Text(
+                text  = "Enter the Cinematic Obsidian.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = OnSurfaceVariant
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            // Glass panel card
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SurfaceContainer.copy(alpha = 0.85f))
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    text      = "Sign In",
+                    style     = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color     = OnSurface,
+                    textAlign = TextAlign.Center,
+                    modifier  = Modifier.fillMaxWidth()
+                )
+
+                CinematicField(
+                    label         = "USERNAME",
+                    value         = uiState.username,
+                    onValueChange = { viewModel.onIntent(LoginIntent.UsernameChanged(it)) },
+                    leadingIcon   = {
+                        Icon(Icons.Outlined.Person, null,
+                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                )
+
+                CinematicField(
+                    label               = "PASSWORD",
+                    value               = uiState.password,
+                    onValueChange       = { viewModel.onIntent(LoginIntent.PasswordChanged(it)) },
+                    visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
+                                         else PasswordVisualTransformation(),
+                    keyboardType        = KeyboardType.Password,
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Lock, null,
+                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick  = { viewModel.onIntent(LoginIntent.TogglePasswordVisible) },
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.passwordVisible) Icons.Outlined.VisibilityOff
+                                              else Icons.Outlined.Visibility,
+                                contentDescription = "Toggle password",
+                                tint   = OnSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                )
+
+                if (uiState.error != null) {
+                    Text(
+                        text  = uiState.error!!,
+                        color = Error,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+
+                SoulGradientButton(
+                    text      = "Sign In",
+                    isLoading = uiState.isLoading,
+                    onClick   = { viewModel.onIntent(LoginIntent.LoginClicked) }
                 )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // App title
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 100)) { 20 } + fadeIn(tween(300, delayMillis = 100))
-            ) {
-                Text("Seriesly", style = MaterialTheme.typography.headlineLarge)
-            }
-
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 150)) { 20 } + fadeIn(tween(300, delayMillis = 150))
-            ) {
+            Row {
                 Text(
-                    "Track what you love, always.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "Don't have an account?  ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnSurfaceVariant
                 )
-            }
-
-            Spacer(Modifier.height(40.dp))
-
-            // Username field
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 200)) { 20 } + fadeIn(tween(300, delayMillis = 200))
-            ) {
-                OutlinedTextField(
-                    value         = uiState.username,
-                    onValueChange = { viewModel.onIntent(LoginIntent.UsernameChanged(it)) },
-                    label         = { Text("Username") },
-                    singleLine    = true,
-                    shape         = RoundedCornerShape(14.dp),
-                    modifier      = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // Password field
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 230)) { 20 } + fadeIn(tween(300, delayMillis = 230))
-            ) {
-                OutlinedTextField(
-                    value               = uiState.password,
-                    onValueChange       = { viewModel.onIntent(LoginIntent.PasswordChanged(it)) },
-                    label               = { Text("Password") },
-                    singleLine          = true,
-                    shape               = RoundedCornerShape(14.dp),
-                    visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
-                                          else PasswordVisualTransformation(),
-                    trailingIcon        = {
-                        IconButton(onClick = { viewModel.onIntent(LoginIntent.TogglePasswordVisible) }) {
-                            Icon(
-                                if (uiState.passwordVisible) Icons.Outlined.VisibilityOff
-                                else Icons.Outlined.Visibility,
-                                contentDescription = "Toggle password visibility"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            if (uiState.error != null) {
-                Spacer(Modifier.height(8.dp))
                 Text(
-                    uiState.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelMedium
+                    "Create one",
+                    style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color    = Primary,
+                    modifier = Modifier.clickable { viewModel.onIntent(LoginIntent.NavigateToRegister) }
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(48.dp))
+        }
+    }
+}
 
-            // Sign In button
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 270)) { 20 } + fadeIn(tween(300, delayMillis = 270))
-            ) {
-                Button(
-                    onClick  = { viewModel.onIntent(LoginIntent.LoginClicked) },
-                    enabled  = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
-                ) {
-                    AnimatedContent(targetState = uiState.isLoading, label = "loginBtn") { loading ->
-                        if (loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color    = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Sign In →", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
+// ── Shared Cinematic components (private to auth) ────────────────────────────
+
+@Composable
+private fun CinematicField(
+    label:                String,
+    value:                String,
+    onValueChange:        (String) -> Unit,
+    leadingIcon:          @Composable (() -> Unit)? = null,
+    trailingIcon:         @Composable (() -> Unit)? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardType:         KeyboardType = KeyboardType.Text
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text     = label,
+            style    = MaterialTheme.typography.labelSmall,
+            color    = OnSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceContainerLow)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            leadingIcon?.invoke()
+            BasicTextField(
+                value                = value,
+                onValueChange        = onValueChange,
+                singleLine           = true,
+                visualTransformation = visualTransformation,
+                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType),
+                textStyle            = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
+                cursorBrush          = SolidColor(Primary),
+                modifier             = Modifier.weight(1f)
+            ) { innerField ->
+                if (value.isEmpty()) {
+                    Text(
+                        text  = label.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Outline.copy(alpha = 0.5f)
+                    )
                 }
+                innerField()
             }
+            trailingIcon?.invoke()
+        }
+    }
+}
 
-            Spacer(Modifier.height(16.dp))
+@Composable
+private fun SoulGradientButton(
+    text:      String,
+    isLoading: Boolean,
+    onClick:   () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue   = if (isPressed) 0.98f else 1f,
+        label         = "btnScale"
+    )
 
-            AnimatedVisibility(
-                visible = launched,
-                enter   = fadeIn(tween(300, delayMillis = 320))
-            ) {
-                TextButton(onClick = { viewModel.onIntent(LoginIntent.NavigateToRegister) }) {
-                    Text("Don't have an account? Create one")
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .scale(scale)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Brushes.SoulGradient)
+            .clickable(
+                interactionSource = interactionSource,
+                indication        = null,
+                enabled           = !isLoading,
+                onClick           = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedContent(targetState = isLoading, label = "btnContent") { loading ->
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier    = Modifier.size(22.dp),
+                    color       = OnPrimaryContainer,
+                    strokeWidth = 2.5.dp
+                )
+            } else {
+                Text(
+                    text  = text,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 16.sp
+                    ),
+                    color = OnPrimaryContainer
+                )
             }
         }
     }

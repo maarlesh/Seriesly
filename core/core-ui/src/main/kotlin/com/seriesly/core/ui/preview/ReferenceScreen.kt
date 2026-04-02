@@ -235,11 +235,11 @@ private fun SpacingRow(label: String, size: androidx.compose.ui.unit.Dp) {
 @Preview(name = "Reference Screen — Dark", showBackground = true, backgroundColor = 0xFF0F0F13, widthDp = 400, heightDp = 900)
 @Composable
 private fun ReferenceScreenDarkPreview() {
-    SerieslyTheme(darkTheme = true) { ReferenceScreen() }
+    SerieslyTheme { ReferenceScreen() }
 }
 
-@Preview(name = "Reference Screen — Light", showBackground = true, backgroundColor = 0xFFF5F5FA, widthDp = 400, heightDp = 900)
+@Preview(name = "Reference Screen — Light", showBackground = true, backgroundColor = 0xFF050A14, widthDp = 400, heightDp = 900)
 @Composable
 private fun ReferenceScreenLightPreview() {
-    SerieslyTheme(darkTheme = false) { ReferenceScreen() }
+    SerieslyTheme { ReferenceScreen() }
 }

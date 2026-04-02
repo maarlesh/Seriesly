@@ -12,5 +12,12 @@ data class EpisodeDto(
     @Json(name = "overview")     val overview: String?,
     @Json(name = "aired")        val aired: String?,
     @Json(name = "runtime")      val runtime: Int?,
-    @Json(name = "image")        val image: String?
+    @Json(name = "image")        val image: String?,
+    @Json(name = "translations") val translations: EpisodeTranslationsDto?
+)
+
+@JsonClass(generateAdapter = true)
+data class EpisodeTranslationsDto(
+    @Json(name = "nameTranslations")     val nameTranslations: List<NameTranslationDto>?,
+    @Json(name = "overviewTranslations") val overviewTranslations: List<OverviewTranslationDto>?
 )

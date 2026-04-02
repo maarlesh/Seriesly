@@ -2,45 +2,52 @@ package com.seriesly.feature.detail.presentation.series
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material3.*
-import com.seriesly.core.domain.model.SeriesWatchStatus
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.seriesly.core.domain.model.SeriesWatchStatus
 import com.seriesly.core.ui.component.AddToWatchlistSheet
 import com.seriesly.core.ui.component.ErrorState
 import com.seriesly.core.ui.component.HeroSkeleton
 import com.seriesly.core.ui.component.ParticleBurstOverlay
-import com.seriesly.core.ui.component.PosterImage
 import com.seriesly.core.ui.component.RatingBottomSheet
-import com.seriesly.core.ui.tokens.ContentSize
+import com.seriesly.core.ui.theme.*
+import com.seriesly.core.ui.tokens.Brushes
+import com.seriesly.core.ui.tokens.Motion
 import com.seriesly.feature.detail.presentation.series.component.SeasonSection
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeriesDetailScreen(
     tvdbId: Int,
@@ -48,7 +55,6 @@ fun SeriesDetailScreen(
     viewModel: SeriesDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -58,7 +64,6 @@ fun SeriesDetailScreen(
         }
     }
 
-    // Auto-dismiss celebration banner after 2500ms
     LaunchedEffect(uiState.showSeriesCompletedCelebration) {
         if (uiState.showSeriesCompletedCelebration) {
             delay(2500)
@@ -68,225 +73,449 @@ fun SeriesDetailScreen(
 
     val isCompleted = uiState.progress?.status == SeriesWatchStatus.WATCHED
 
-    Scaffold(
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(uiState.series?.title ?: "") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    val bookmarkTint by animateColorAsState(
-                        targetValue   = if (uiState.inWatchlistIds.isNotEmpty())
-                                            MaterialTheme.colorScheme.primary
-                                        else LocalContentColor.current,
-                        animationSpec = tween(250),
-                        label         = "bookmarkTint"
-                    )
-                    IconButton(onClick = { viewModel.onIntent(SeriesDetailIntent.ShowWatchlistSheet) }) {
-                        Icon(
-                            imageVector        = if (uiState.inWatchlistIds.isNotEmpty()) Icons.Filled.Bookmark
-                                                 else Icons.Outlined.BookmarkAdd,
-                            contentDescription = "Add to watchlist",
-                            tint               = bookmarkTint
-                        )
-                    }
-                    val doneAllTint by animateColorAsState(
-                        targetValue   = if (isCompleted) MaterialTheme.colorScheme.primary
-                                        else LocalContentColor.current,
-                        animationSpec = tween(300),
-                        label         = "doneAllTint"
-                    )
-                    IconButton(onClick = { viewModel.onIntent(SeriesDetailIntent.MarkAllWatched) }) {
-                        Icon(
-                            imageVector        = Icons.Outlined.DoneAll,
-                            contentDescription = "Mark all watched",
-                            tint               = doneAllTint
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-    ) { padding ->
-        Box(Modifier.fillMaxSize()) {
-            when {
-                uiState.isLoading && uiState.series == null ->
-                    HeroSkeleton(modifier = Modifier.fillMaxSize().padding(padding))
+    // Charging animation offset (0→1 loops)
+    val infiniteTransition = rememberInfiniteTransition(label = "charging")
+    val chargeOffset by infiniteTransition.animateFloat(
+        initialValue   = 0f,
+        targetValue    = 1f,
+        animationSpec  = Motion.ChargingInfinite,
+        label          = "chargeOffset"
+    )
 
-                uiState.error != null && uiState.series == null ->
-                    ErrorState(
-                        error    = uiState.error!!,
-                        onRetry  = {},
-                        modifier = Modifier.fillMaxSize().padding(padding)
-                    )
-
-                uiState.series != null -> {
-                    val series = uiState.series!!
-
-                    val animatedProgress by animateFloatAsState(
-                        targetValue   = uiState.progress?.progressPercent ?: 0f,
-                        animationSpec = spring(dampingRatio = 0.7f, stiffness = 180f),
-                        label         = "overallProgress"
-                    )
-
-                    LazyColumn(contentPadding = padding) {
-                        item {
-                            Box(Modifier.fillMaxWidth().height(250.dp)) {
-                                PosterImage(
-                                    url                = series.backdropUrl,
-                                    contentDescription = series.title,
-                                    modifier           = Modifier.fillMaxSize(),
-                                    width              = 600.dp,
-                                    height             = 250.dp
-                                )
-                                // Gradient scrim over backdrop bottom
-                                Box(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.background
-                                                )
-                                            )
-                                        )
-                                )
-                                PosterImage(
-                                    url                = series.posterUrl,
-                                    contentDescription = series.title,
-                                    modifier           = Modifier
-                                        .align(Alignment.BottomStart)
-                                        .padding(16.dp),
-                                    width              = ContentSize.posterDetailWidth,
-                                    height             = ContentSize.posterDetailHeight,
-                                    withShadow         = true
-                                )
-                            }
-                        }
-                        item {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(series.title, style = MaterialTheme.typography.headlineMedium)
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.padding(top = 4.dp)
-                                ) {
-                                    series.firstAired?.let {
-                                        Text(it.take(4), style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    Text(
-                                        series.status.name.lowercase().replaceFirstChar { it.uppercase() },
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                                uiState.progress?.takeIf { it.totalAiredEpisodes > 0 }?.let { progress ->
-                                    Spacer(Modifier.height(8.dp))
-                                    AnimatedContent(
-                                        targetState = "${progress.watchedEpisodes} / ${progress.totalAiredEpisodes} aired episodes watched",
-                                        label       = "progressText"
-                                    ) { text ->
-                                        Text(
-                                            text  = text,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    LinearProgressIndicator(
-                                        progress = { animatedProgress },
-                                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                                    )
-                                }
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.padding(top = 12.dp)
-                                ) {
-                                    AssistChip(
-                                        onClick = { viewModel.onIntent(SeriesDetailIntent.ShowRatingSheet) },
-                                        label   = {
-                                            Text(
-                                                if (uiState.userRating != null)
-                                                    "\u2605 ${"%.1f".format(uiState.userRating)}"
-                                                else "Rate"
-                                            )
-                                        }
-                                    )
-                                }
-                                if (series.genres.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        text  = series.genres.joinToString(" · "),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                Text(series.overview, style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                        items(series.seasons) { season ->
-                            SeasonSection(
-                                season              = season,
-                                expandedSeasonIds   = uiState.expandedSeasonIds,
-                                episodeWatched      = uiState.episodeWatched,
-                                onToggleExpand      = { viewModel.onIntent(SeriesDetailIntent.ToggleSeason(it)) },
-                                onEpisodeToggle     = { episode, watched ->
-                                    viewModel.onIntent(SeriesDetailIntent.EpisodeToggled(episode.episodeId, watched))
-                                },
-                                onMarkSeasonWatched = { viewModel.onIntent(SeriesDetailIntent.SeasonMarkWatched(it)) }
-                            )
-                        }
-                    }
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
+        when {
+            uiState.isLoading && uiState.series == null -> {
+                HeroSkeleton(modifier = Modifier.fillMaxSize())
             }
 
-            // Series Complete! banner — wrapped in Column to provide ColumnScope for AnimatedVisibility
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = padding.calculateTopPadding() + 8.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                AnimatedVisibility(
-                    visible = uiState.showSeriesCompletedCelebration,
-                    enter   = slideInVertically { -it } + fadeIn(),
-                    exit    = fadeOut()
-                ) {
-                    Surface(
-                        shape           = MaterialTheme.shapes.medium,
-                        color           = MaterialTheme.colorScheme.primaryContainer,
-                        shadowElevation = 6.dp
-                    ) {
-                        Row(
-                            modifier              = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                            verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector        = Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                tint               = MaterialTheme.colorScheme.primary,
-                                modifier           = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text  = "Series Complete!",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Particle burst overlay
-            if (uiState.showSeriesCompletedCelebration) {
-                ParticleBurstOverlay(
-                    onComplete = { /* Banner auto-dismisses via LaunchedEffect */ }
+            uiState.error != null && uiState.series == null -> {
+                ErrorState(
+                    error    = uiState.error!!,
+                    onRetry  = {},
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+
+            uiState.series != null -> {
+                val series = uiState.series!!
+
+                val animatedProgress by animateFloatAsState(
+                    targetValue   = uiState.progress?.progressPercent ?: 0f,
+                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 180f),
+                    label         = "overallProgress"
+                )
+                val watchedCount  = uiState.progress?.watchedEpisodes ?: 0
+                val totalCount    = uiState.progress?.totalAiredEpisodes ?: 0
+                val progressPct   = if (totalCount > 0) (watchedCount * 100 / totalCount) else 0
+
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    // ── Hero Section ──────────────────────────────────────────
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(530.dp)
+                        ) {
+                            // Backdrop image
+                            AsyncImage(
+                                model              = series.backdropUrl ?: series.posterUrl,
+                                contentDescription = null,
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier.fillMaxSize()
+                            )
+                            // Hero scrim
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Brushes.HeroScrim)
+                            )
+
+                            // Poster + metadata row at the bottom
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(horizontal = 20.dp, vertical = 0.dp)
+                                    .offset(y = 32.dp),   // float above the fold
+                                verticalAlignment     = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Poster card
+                                Box(
+                                    modifier = Modifier
+                                        .width(104.dp)
+                                        .aspectRatio(2f / 3f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(SurfaceContainerHighest)
+                                        .drawBehind {
+                                            // Soft shadow
+                                            drawRect(
+                                                Brush.verticalGradient(
+                                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                                                )
+                                            )
+                                        }
+                                ) {
+                                    AsyncImage(
+                                        model              = series.posterUrl,
+                                        contentDescription = series.title,
+                                        contentScale       = ContentScale.Crop,
+                                        modifier           = Modifier.fillMaxSize()
+                                    )
+                                }
+
+                                // Metadata
+                                Column(
+                                    modifier = Modifier.padding(bottom = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    // Status badge
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(50))
+                                            .background(Secondary.copy(alpha = 0.10f))
+                                            // border drawn via clip + background combo above
+                                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text  = series.status.name.uppercase(),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = Secondary
+                                        )
+                                    }
+                                    Text(
+                                        text     = series.title,
+                                        style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                        color    = OnSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment     = Alignment.CenterVertically
+                                    ) {
+                                        series.firstAired?.let { aired ->
+                                            Text(
+                                                text  = "First Aired: ${aired.take(10)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = OnSurfaceVariant
+                                            )
+                                        }
+                                        series.tvdbRating?.let { rating ->
+                                            Row(
+                                                verticalAlignment     = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector        = Icons.Filled.CheckCircle,
+                                                    contentDescription = null,
+                                                    tint               = Tertiary,
+                                                    modifier           = Modifier.size(14.dp)
+                                                )
+                                                Text(
+                                                    text  = "%.1f".format(rating),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = OnSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Extra space for floating poster overlap
+                    item { Spacer(Modifier.height(48.dp)) }
+
+                    // ── Progress & Action Card ────────────────────────────────
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Progress bar header
+                            if (totalCount > 0) {
+                                Row(
+                                    modifier              = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text  = "SERIES PROGRESS",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = OnSurfaceVariant
+                                    )
+                                    Text(
+                                        text  = "$progressPct%",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = Secondary
+                                    )
+                                }
+
+                                // Charging progress bar
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(12.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(SurfaceContainerHighest.copy(alpha = 0.5f))
+                                        .padding(2.dp)
+                                ) {
+                                    val fillFraction = animatedProgress.coerceIn(0f, 1f)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .fillMaxWidth(fillFraction)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(
+                                                // Charging sweep: shift gradient by offset
+                                                Brush.horizontalGradient(
+                                                    colorStops = arrayOf(
+                                                        ((chargeOffset - 0.5f).coerceAtLeast(0f)) to Secondary,
+                                                        chargeOffset to SecondaryContainer,
+                                                        ((chargeOffset + 0.5f).coerceAtMost(1f)) to Secondary
+                                                    )
+                                                )
+                                            )
+                                            .drawBehind {
+                                                // Green glow
+                                                drawRect(
+                                                    Brush.horizontalGradient(
+                                                        colors = listOf(
+                                                            Secondary.copy(alpha = 0f),
+                                                            Secondary.copy(alpha = 0.5f)
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                    )
+                                }
+
+                                Text(
+                                    text  = "$watchedCount of $totalCount episodes watched".uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Outline
+                                )
+                            }
+
+                            // Rating chip
+                            AssistChip(
+                                onClick = { viewModel.onIntent(SeriesDetailIntent.ShowRatingSheet) },
+                                label   = {
+                                    Text(
+                                        if (uiState.userRating != null)
+                                            "★ ${"%.1f".format(uiState.userRating)}"
+                                        else "Rate this series"
+                                    )
+                                },
+                                colors  = AssistChipDefaults.assistChipColors(
+                                    containerColor    = SurfaceContainerHigh,
+                                    labelColor        = if (uiState.userRating != null) Tertiary else OnSurfaceVariant
+                                )
+                            )
+
+                            // Action buttons
+                            Row(
+                                modifier              = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Watchlist glass button
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Primary.copy(alpha = 0.15f))
+                                        .clickable { viewModel.onIntent(SeriesDetailIntent.ShowWatchlistSheet) }
+                                        .padding(vertical = 14.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector        = if (uiState.inWatchlistIds.isNotEmpty())
+                                                                 Icons.Filled.BookmarkAdded
+                                                             else Icons.Outlined.BookmarkAdd,
+                                        contentDescription = "Watchlist",
+                                        tint               = Primary,
+                                        modifier           = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text  = "Watchlist",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Primary
+                                    )
+                                }
+                                // All Watched glass button
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .clickable { viewModel.onIntent(SeriesDetailIntent.MarkAllWatched) }
+                                        .padding(vertical = 14.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector        = Icons.Outlined.DoneAll,
+                                        contentDescription = "Mark all watched",
+                                        tint               = if (isCompleted) Secondary else OnSurface,
+                                        modifier           = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text  = "All Watched",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isCompleted) Secondary else OnSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Genres & Overview ─────────────────────────────────────
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (series.genres.isNotEmpty()) {
+                                Text(
+                                    text  = "GENRE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Outline
+                                )
+                                Text(
+                                    text  = series.genres.joinToString(" · "),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Primary
+                                )
+                            }
+                            if (series.overview.isNotBlank()) {
+                                Text(
+                                    text  = "SYNOPSIS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Outline
+                                )
+                                Text(
+                                    text  = series.overview,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = OnSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    // ── Seasons ───────────────────────────────────────────────
+                    item {
+                        Text(
+                            text     = "Seasons",
+                            style    = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color    = Primary,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+                    items(series.seasons) { season ->
+                        SeasonSection(
+                            season              = season,
+                            expandedSeasonIds   = uiState.expandedSeasonIds,
+                            episodeWatched      = uiState.episodeWatched,
+                            onToggleExpand      = { viewModel.onIntent(SeriesDetailIntent.ToggleSeason(it)) },
+                            onEpisodeToggle     = { episode, watched ->
+                                viewModel.onIntent(SeriesDetailIntent.EpisodeToggled(episode.episodeId, watched))
+                            },
+                            onMarkSeasonWatched = { viewModel.onIntent(SeriesDetailIntent.SeasonMarkWatched(it)) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Glass top app bar (floating)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopStart)
+                .background(Surface.copy(alpha = 0.40f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = Primary)
+                }
+                Text(
+                    text  = "Seriesly",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                    color = Primary
+                )
+            }
+            Row {
+                IconButton(onClick = {}) {
+                    Icon(Icons.Filled.Search, "Search", tint = Primary)
+                }
+                IconButton(onClick = {}) {
+                    Icon(Icons.Filled.MoreVert, "More", tint = Primary)
+                }
+            }
+        }
+
+        // Series Complete! banner
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 64.dp)
+                .padding(horizontal = 16.dp)
+        ) {
+            AnimatedVisibility(
+                visible = uiState.showSeriesCompletedCelebration,
+                enter   = slideInVertically { -it } + fadeIn(),
+                exit    = fadeOut()
+            ) {
+                Surface(
+                    shape           = MaterialTheme.shapes.medium,
+                    color           = SecondaryContainer,
+                    shadowElevation = 6.dp
+                ) {
+                    Row(
+                        modifier              = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            tint               = Secondary,
+                            modifier           = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text  = "Series Complete!",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = OnSecondaryContainer
+                        )
+                    }
+                }
+            }
+        }
+
+        if (uiState.showSeriesCompletedCelebration) {
+            ParticleBurstOverlay(onComplete = {})
         }
     }
 

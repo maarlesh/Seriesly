@@ -156,7 +156,6 @@ private fun DiscoveryPosterCard(item: ContentItem, onClick: () -> Unit) {
     Column(
         modifier            = Modifier
             .width(96.dp)
-            .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.Start
     ) {
@@ -182,7 +181,6 @@ private fun RatingPosterCard(item: RatedItem, onClick: () -> Unit) {
     Column(
         modifier            = Modifier
             .width(96.dp)
-            .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.Start
     ) {

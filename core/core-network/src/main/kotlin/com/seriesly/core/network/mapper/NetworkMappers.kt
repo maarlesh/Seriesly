@@ -10,7 +10,7 @@ fun SearchResultDto.toEntity(query: String, queryHash: String, now: Long): Searc
         queryHash   = queryHash,
         query       = query,
         tvdbId      = id,
-        title       = name,
+        title       = englishName(),
         contentType = if (type.equals("movie", ignoreCase = true)) ContentType.MOVIE else ContentType.SERIES,
         year        = year?.toIntOrNull(),
         posterUrl   = imageUrl ?: poster,
@@ -21,13 +21,19 @@ fun SearchResultDto.toEntity(query: String, queryHash: String, now: Long): Searc
 
 fun MovieExtendedDto.toEntity(now: Long) = MovieEntity(
     tvdbId         = id,
-    title          = name,
-    overview       = overview.orEmpty(),
-    year           = year,
+    title          = translations?.nameTranslations
+                         ?.firstOrNull { it.language == "eng" }?.name
+                         ?: name,
+    overview       = translations?.overviewTranslations
+                         ?.firstOrNull { it.isPrimary == true }?.overview
+                         ?: translations?.overviewTranslations
+                         ?.firstOrNull { it.language == "eng" }?.overview
+                         ?: "",
+    year           = year?.toIntOrNull(),
     runtimeMinutes = runtime,
     genres         = genres?.map { it.name } ?: emptyList(),
     posterUrl      = image,
-    backdropUrl    = artworks?.firstOrNull { it.type == 3 }?.image,
+    backdropUrl    = artworks?.firstOrNull { it.type == 15 }?.image,
     tvdbRating     = score,
     status         = status?.name,
     cachedAt       = now
@@ -35,10 +41,14 @@ fun MovieExtendedDto.toEntity(now: Long) = MovieEntity(
 
 fun SeriesExtendedDto.toEntity(now: Long): SeriesEntity {
     val officialSeasons = seasons ?: emptyList()
+    val englishName = translations?.nameTranslations
+        ?.firstOrNull { it.language == "eng" }?.name
+    val englishOverview = translations?.overviewTranslations
+        ?.firstOrNull { it.language == "eng" }?.overview
     return SeriesEntity(
         tvdbId        = id,
-        title         = name,
-        overview      = overview.orEmpty(),
+        title         = englishName ?: name,
+        overview      = englishOverview ?: overview.orEmpty(),
         firstAired    = firstAired,
         status        = normaliseStatus(status?.name),
         genres        = genres?.map { it.name } ?: emptyList(),
@@ -73,8 +83,8 @@ fun EpisodeDto.toEntity(seasonId: Int, seriesTvdbId: Int, now: Long) = EpisodeEn
     seasonId       = seasonId,
     seriesTvdbId   = seriesTvdbId,
     episodeNumber  = number,
-    title          = name,
-    overview       = overview,
+    title          = translations?.nameTranslations?.firstOrNull { it.language == "eng" }?.name ?: name,
+    overview       = translations?.overviewTranslations?.firstOrNull { it.language == "eng" }?.overview ?: overview,
     airDate        = aired,
     runtimeMinutes = runtime,
     stillUrl       = image,

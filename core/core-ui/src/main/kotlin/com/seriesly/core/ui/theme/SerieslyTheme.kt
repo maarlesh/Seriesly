@@ -1,72 +1,59 @@
 package com.seriesly.core.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
+// Cinematic Obsidian — dark-only design. Light scheme intentionally absent for v1.1.
 private val SerieslyDarkColorScheme = darkColorScheme(
-    primary              = BrandPurple,
-    onPrimary            = DarkOnError,           // white
-    primaryContainer     = BrandPurpleDim,
-    onPrimaryContainer   = DarkOnBackground,
-    secondary            = BrandTeal,
-    onSecondary          = DarkOnError,
-    secondaryContainer   = DarkSurfaceVariant,
-    onSecondaryContainer = DarkOnSurface,
-    tertiary             = TertiaryAmber,
-    onTertiary           = DarkBackground,
-    tertiaryContainer    = TertiaryAmberDark,
-    onTertiaryContainer  = DarkOnBackground,
-    background           = DarkBackground,
-    onBackground         = DarkOnBackground,
-    surface              = DarkSurface,
-    onSurface            = DarkOnSurface,
-    surfaceVariant       = DarkSurfaceVariant,
-    onSurfaceVariant     = DarkOnSurfaceVariant,
-    surfaceContainer     = DarkSurfaceContainer,
-    outline              = DarkOutline,
-    error                = DarkError,
-    onError              = DarkOnError,
-    errorContainer       = DarkErrorContainer,
-    onErrorContainer     = DarkOnBackground
-)
+    primary              = Primary,
+    onPrimary            = OnPrimary,
+    primaryContainer     = PrimaryContainer,
+    onPrimaryContainer   = OnPrimaryContainer,
+    inversePrimary       = InversePrimary,
 
-private val SerieslyLightColorScheme = lightColorScheme(
-    primary              = BrandPurpleLight,
-    onPrimary            = LightOnError,           // white
-    primaryContainer     = LightSurfaceVariant,
-    onPrimaryContainer   = LightOnBackground,
-    secondary            = BrandTeal,
-    onSecondary          = LightOnError,
-    secondaryContainer   = LightSurfaceContainer,
-    onSecondaryContainer = LightOnSurface,
-    tertiary             = TertiaryAmberDark,
-    onTertiary           = LightOnError,
-    tertiaryContainer    = LightSurfaceVariant,
-    onTertiaryContainer  = LightOnBackground,
-    background           = LightBackground,
-    onBackground         = LightOnBackground,
-    surface              = LightSurface,
-    onSurface            = LightOnSurface,
-    surfaceVariant       = LightSurfaceVariant,
-    onSurfaceVariant     = LightOnSurfaceVariant,
-    surfaceContainer     = LightSurfaceContainer,
-    outline              = LightOutline,
-    error                = LightError,
-    onError              = LightOnError,
-    errorContainer       = LightErrorContainer,
-    onErrorContainer     = LightOnBackground
+    secondary            = Secondary,
+    onSecondary          = OnSecondary,
+    secondaryContainer   = SecondaryContainer,
+    onSecondaryContainer = OnSecondaryContainer,
+
+    tertiary             = Tertiary,
+    onTertiary           = OnTertiary,
+    tertiaryContainer    = TertiaryContainer,
+    onTertiaryContainer  = OnTertiaryContainer,
+
+    background           = Background,
+    onBackground         = OnBackground,
+
+    surface              = Surface,
+    onSurface            = OnSurface,
+    surfaceVariant       = SurfaceVariant,
+    onSurfaceVariant     = OnSurfaceVariant,
+    surfaceTint          = SurfaceTint,
+    inverseSurface       = InverseSurface,
+    inverseOnSurface     = InverseOnSurface,
+
+    surfaceContainer          = SurfaceContainer,
+    surfaceContainerLow       = SurfaceContainerLow,
+    surfaceContainerHigh      = SurfaceContainerHigh,
+    surfaceContainerHighest   = SurfaceContainerHighest,
+    surfaceContainerLowest    = SurfaceContainerLowest,
+    surfaceBright             = SurfaceBright,
+    surfaceDim                = SurfaceDim,
+
+    outline              = Outline,
+    outlineVariant       = OutlineVariant,
+
+    error                = Error,
+    onError              = OnError,
+    errorContainer       = ErrorContainer,
+    onErrorContainer     = OnErrorContainer,
 )
 
 @Composable
-fun SerieslyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
+fun SerieslyTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = if (darkTheme) SerieslyDarkColorScheme else SerieslyLightColorScheme,
+        colorScheme = SerieslyDarkColorScheme,
         typography  = SerieslyTypography,
         shapes      = SerieslyShapes,
         content     = content

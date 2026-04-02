@@ -37,8 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.seriesly.core.domain.model.Episode
 import com.seriesly.core.domain.model.Season
-import com.seriesly.core.ui.theme.WatchedGold
-import com.seriesly.core.ui.theme.WatchedGoldSubtle
+import com.seriesly.core.ui.theme.Secondary
+import com.seriesly.core.ui.theme.SecondaryContainer
+import com.seriesly.core.ui.theme.SurfaceContainerLow
 
 @Composable
 fun SeasonSection(
@@ -59,12 +60,13 @@ fun SeasonSection(
         label         = "seasonProgress"
     )
     val cardOverlay by animateColorAsState(
-        targetValue   = if (enrichedSeason.isComplete) WatchedGoldSubtle else androidx.compose.ui.graphics.Color.Transparent,
+        targetValue   = if (enrichedSeason.isComplete) Secondary.copy(alpha = 0.06f)
+                        else androidx.compose.ui.graphics.Color.Transparent,
         animationSpec = tween(500),
         label         = "seasonBg"
     )
     val progressColor by animateColorAsState(
-        targetValue   = if (enrichedSeason.isComplete) WatchedGold else MaterialTheme.colorScheme.primary,
+        targetValue   = if (enrichedSeason.isComplete) Secondary else MaterialTheme.colorScheme.secondary,
         animationSpec = tween(400),
         label         = "progressColor"
     )
@@ -89,7 +91,7 @@ fun SeasonSection(
                                 Icon(
                                     imageVector        = Icons.Filled.CheckCircle,
                                     contentDescription = "Season complete",
-                                    tint               = WatchedGold,
+                                    tint               = Secondary,
                                     modifier           = Modifier.padding(start = 6.dp).size(16.dp)
                                 )
                             }

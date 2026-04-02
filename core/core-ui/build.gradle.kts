@@ -17,6 +17,7 @@ android {
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
+    implementation(libs.compose.ui.text.google.fonts)
     implementation(libs.coil.compose)
     implementation(libs.core.ktx)
     implementation(project(":core:core-common"))

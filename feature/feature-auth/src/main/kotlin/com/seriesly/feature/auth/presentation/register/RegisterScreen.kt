@@ -1,19 +1,21 @@
 package com.seriesly.feature.auth.presentation.register
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
@@ -22,16 +24,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.seriesly.core.ui.theme.BrandPurple
-import com.seriesly.core.ui.theme.BrandPurpleDim
+import com.seriesly.core.ui.theme.*
+import com.seriesly.core.ui.tokens.Brushes
 
 @Composable
 fun RegisterScreen(
@@ -50,31 +57,32 @@ fun RegisterScreen(
         }
     }
 
-    var launched by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { launched = true }
-
-    val logoScale by animateFloatAsState(
-        targetValue   = if (launched) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
-        label         = "logoScale"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Background)
     ) {
+        // Ambient glow — top-right primary blob
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .size(480.dp)
+                .offset(x = 100.dp, y = (-100).dp)
+                .align(Alignment.TopEnd)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(
-                            BrandPurpleDim.copy(alpha = 0.25f),
-                            Color.Transparent
-                        ),
-                        center = Offset(0.5f, 0f),
-                        radius = 800f
+                        colors = listOf(Primary.copy(alpha = 0.10f), Color.Transparent)
+                    )
+                )
+        )
+        // Ambient glow — bottom-left secondary blob
+        Box(
+            modifier = Modifier
+                .size(320.dp)
+                .offset(x = (-60).dp, y = 60.dp)
+                .align(Alignment.BottomStart)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Secondary.copy(alpha = 0.05f), Color.Transparent)
                     )
                 )
         )
@@ -89,162 +97,268 @@ fun RegisterScreen(
         ) {
             Spacer(Modifier.height(48.dp))
 
+            // Brand header
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .scale(logoScale)
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .background(BrandPurple),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Brushes.SoulGradient),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector        = Icons.Filled.Tv,
+                    imageVector        = Icons.Filled.Movie,
                     contentDescription = null,
-                    tint               = Color.White,
-                    modifier           = Modifier.size(36.dp)
+                    tint               = OnPrimaryContainer,
+                    modifier           = Modifier.size(28.dp)
                 )
             }
 
             Spacer(Modifier.height(16.dp))
 
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 80)) { 20 } + fadeIn(tween(300, delayMillis = 80))
-            ) {
-                Text("Create Account", style = MaterialTheme.typography.headlineLarge)
-            }
-
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 130)) { 20 } + fadeIn(tween(300, delayMillis = 130))
-            ) {
-                Text(
-                    "Start tracking your watchlist",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text  = "Seriesly",
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontStyle  = FontStyle.Italic
+                ),
+                color = Primary
+            )
+            Text(
+                text  = "Enter the Cinematic Obsidian.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = OnSurfaceVariant
+            )
 
             Spacer(Modifier.height(32.dp))
 
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 170)) { 20 } + fadeIn(tween(300, delayMillis = 170))
+            // Glass panel card
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SurfaceContainer.copy(alpha = 0.85f))
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                OutlinedTextField(
-                    value          = uiState.username,
-                    onValueChange  = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
-                    label          = { Text("Username") },
-                    singleLine     = true,
-                    shape          = RoundedCornerShape(14.dp),
-                    isError        = uiState.usernameError != null,
-                    supportingText = uiState.usernameError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-                    modifier       = Modifier.fillMaxWidth()
+                Text(
+                    text       = "Create Account",
+                    style      = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color      = OnSurface,
+                    textAlign  = TextAlign.Center,
+                    modifier   = Modifier.fillMaxWidth()
                 )
-            }
 
-            Spacer(Modifier.height(8.dp))
+                RegisterField(
+                    label         = "USERNAME",
+                    value         = uiState.username,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
+                    errorText     = uiState.usernameError,
+                    leadingIcon   = {
+                        Icon(Icons.Outlined.Person, null,
+                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                )
 
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 200)) { 20 } + fadeIn(tween(300, delayMillis = 200))
-            ) {
-                OutlinedTextField(
+                RegisterField(
+                    label               = "PASSWORD",
                     value               = uiState.password,
                     onValueChange       = { viewModel.onIntent(RegisterIntent.PasswordChanged(it)) },
-                    label               = { Text("Password") },
-                    singleLine          = true,
-                    shape               = RoundedCornerShape(14.dp),
-                    isError             = uiState.passwordError != null,
-                    supportingText      = uiState.passwordError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                    errorText           = uiState.passwordError,
                     visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
-                                          else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { viewModel.onIntent(RegisterIntent.TogglePasswordVisible) }) {
-                            Icon(
-                                if (uiState.passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = "Toggle password visibility"
-                            )
-                        }
+                                         else PasswordVisualTransformation(),
+                    keyboardType        = KeyboardType.Password,
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Lock, null,
+                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
                     },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 230)) { 20 } + fadeIn(tween(300, delayMillis = 230))
-            ) {
-                OutlinedTextField(
-                    value               = uiState.confirmPassword,
-                    onValueChange       = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
-                    label               = { Text("Confirm Password") },
-                    singleLine          = true,
-                    shape               = RoundedCornerShape(14.dp),
-                    isError             = uiState.confirmError != null,
-                    supportingText      = uiState.confirmError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-                    visualTransformation = if (uiState.confirmVisible) VisualTransformation.None
-                                          else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { viewModel.onIntent(RegisterIntent.ToggleConfirmVisible) }) {
+                        IconButton(
+                            onClick  = { viewModel.onIntent(RegisterIntent.TogglePasswordVisible) },
+                            modifier = Modifier.size(20.dp)
+                        ) {
                             Icon(
-                                if (uiState.confirmVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = "Toggle confirm visibility"
+                                imageVector = if (uiState.passwordVisible) Icons.Outlined.VisibilityOff
+                                              else Icons.Outlined.Visibility,
+                                contentDescription = "Toggle password",
+                                tint     = OnSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
                             )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            if (uiState.generalError != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    uiState.generalError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            AnimatedVisibility(
-                visible = launched,
-                enter   = slideInVertically(tween(300, delayMillis = 260)) { 20 } + fadeIn(tween(300, delayMillis = 260))
-            ) {
-                Button(
-                    onClick  = { viewModel.onIntent(RegisterIntent.RegisterClicked) },
-                    enabled  = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
-                ) {
-                    AnimatedContent(targetState = uiState.isLoading, label = "registerBtn") { loading ->
-                        if (loading) {
-                            CircularProgressIndicator(
-                                modifier    = Modifier.size(20.dp),
-                                color       = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Create Account →", style = MaterialTheme.typography.labelLarge)
                         }
                     }
+                )
+
+                RegisterField(
+                    label               = "CONFIRM PASSWORD",
+                    value               = uiState.confirmPassword,
+                    onValueChange       = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
+                    errorText           = uiState.confirmError,
+                    visualTransformation = if (uiState.confirmVisible) VisualTransformation.None
+                                         else PasswordVisualTransformation(),
+                    keyboardType        = KeyboardType.Password,
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Lock, null,
+                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick  = { viewModel.onIntent(RegisterIntent.ToggleConfirmVisible) },
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.confirmVisible) Icons.Outlined.VisibilityOff
+                                              else Icons.Outlined.Visibility,
+                                contentDescription = "Toggle confirm",
+                                tint     = OnSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                )
+
+                if (uiState.generalError != null) {
+                    Text(
+                        text  = uiState.generalError!!,
+                        color = Error,
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
+
+                RegisterSoulButton(
+                    text      = "Create Account",
+                    isLoading = uiState.isLoading,
+                    onClick   = { viewModel.onIntent(RegisterIntent.RegisterClicked) }
+                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            AnimatedVisibility(
-                visible = launched,
-                enter   = fadeIn(tween(300, delayMillis = 310))
-            ) {
-                TextButton(onClick = { viewModel.onIntent(RegisterIntent.NavigateToLogin) }) {
-                    Text("Already have an account? Sign in")
-                }
+            Row {
+                Text(
+                    "Already have an account?  ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnSurfaceVariant
+                )
+                Text(
+                    "Sign In",
+                    style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color    = Primary,
+                    modifier = Modifier.clickable { viewModel.onIntent(RegisterIntent.NavigateToLogin) }
+                )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(48.dp))
+        }
+    }
+}
+
+// ── Private helpers ───────────────────────────────────────────────────────────
+
+@Composable
+private fun RegisterField(
+    label:                String,
+    value:                String,
+    onValueChange:        (String) -> Unit,
+    errorText:            String?            = null,
+    leadingIcon:          @Composable (() -> Unit)? = null,
+    trailingIcon:         @Composable (() -> Unit)? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardType:         KeyboardType = KeyboardType.Text
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text     = label,
+            style    = MaterialTheme.typography.labelSmall,
+            color    = if (errorText != null) Error else OnSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceContainerLow)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            leadingIcon?.invoke()
+            BasicTextField(
+                value                = value,
+                onValueChange        = onValueChange,
+                singleLine           = true,
+                visualTransformation = visualTransformation,
+                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType),
+                textStyle            = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
+                cursorBrush          = SolidColor(Primary),
+                modifier             = Modifier.weight(1f)
+            ) { innerField ->
+                if (value.isEmpty()) {
+                    Text(
+                        text  = label.split(" ").first().lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Outline.copy(alpha = 0.5f)
+                    )
+                }
+                innerField()
+            }
+            trailingIcon?.invoke()
+        }
+        if (errorText != null) {
+            Text(
+                text     = errorText,
+                style    = MaterialTheme.typography.labelSmall,
+                color    = Error,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegisterSoulButton(
+    text:      String,
+    isLoading: Boolean,
+    onClick:   () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        label       = "btnScale"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .scale(scale)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Brushes.SoulGradient)
+            .clickable(
+                interactionSource = interactionSource,
+                indication        = null,
+                enabled           = !isLoading,
+                onClick           = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedContent(targetState = isLoading, label = "btnContent") { loading ->
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier    = Modifier.size(22.dp),
+                    color       = OnPrimaryContainer,
+                    strokeWidth = 2.5.dp
+                )
+            } else {
+                Text(
+                    text  = text,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 16.sp
+                    ),
+                    color = OnPrimaryContainer
+                )
+            }
         }
     }
 }
