@@ -24,5 +24,8 @@ data class WatchlistEntity(
     val name: String,
     val isDefault: Boolean = false,
     val sortOrder: Int = 0,
-    val createdAt: Long
+    val createdAt: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val pendingSync: Boolean = true,
+    val syncedAt: Long = 0L
 )

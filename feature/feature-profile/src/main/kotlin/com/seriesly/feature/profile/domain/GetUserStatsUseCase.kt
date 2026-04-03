@@ -6,8 +6,10 @@ import com.seriesly.core.database.dao.RatingDao
 import com.seriesly.core.database.dao.UserDao
 import com.seriesly.core.database.dao.WatchlistDao
 import com.seriesly.core.security.session.SessionManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 data class UserStats(
@@ -25,22 +27,27 @@ class GetUserStatsUseCase @Inject constructor(
     private val watchlistDao: WatchlistDao,
     private val sessionManager: SessionManager
 ) {
-    suspend operator fun invoke(): Result<UserStats> = withContext(Dispatchers.IO) {
-        try {
-            val userId = sessionManager.getCurrentUserId()
-            val user = userDao.findById(userId)
-                ?: return@withContext Result.Error(AppException.AuthException())
-            val stats = UserStats(
-                username        = user.username,
-                moviesWatched   = 0,
-                seriesTracked   = 0,
-                totalRatings    = ratingDao.getRatingCount(userId),
-                totalWatchlists = watchlistDao.countForUser(userId),
-                memberSince     = user.createdAt
-            )
-            Result.Success(stats)
-        } catch (e: Exception) {
-            Result.Error(AppException.DatabaseException("Stats error", e))
-        }
+    operator fun invoke(): Flow<Result<UserStats>> = flow {
+        val userId = sessionManager.getCurrentUserId()
+        val user = userDao.findById(userId)
+            ?: run { emit(Result.Error(AppException.AuthException())); return@flow }
+
+        emitAll(
+            combine(
+                watchlistDao.observeCountForUser(userId),
+                ratingDao.observeRatingCount(userId)
+            ) { watchlistCount, ratingCount ->
+                Result.Success(
+                    UserStats(
+                        username        = user.username,
+                        moviesWatched   = 0,
+                        seriesTracked   = 0,
+                        totalRatings    = ratingCount,
+                        totalWatchlists = watchlistCount,
+                        memberSince     = user.createdAt
+                    )
+                )
+            }
+        )
     }
 }

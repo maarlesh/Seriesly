@@ -10,8 +10,9 @@ class SessionManager @Inject constructor(
     private val encryptedPrefs: SharedPreferences
 ) {
     companion object {
-        private const val KEY_USER_ID = "active_user_id"
-        private const val KEY_TOKEN   = "session_token"
+        private const val KEY_USER_ID      = "active_user_id"
+        private const val KEY_TOKEN        = "session_token"
+        private const val KEY_LAST_PULL_AT = "last_pull_at"
     }
 
     fun isLoggedIn(): Boolean = encryptedPrefs.contains(KEY_TOKEN)
@@ -29,6 +30,13 @@ class SessionManager @Inject constructor(
         encryptedPrefs.edit()
             .remove(KEY_USER_ID)
             .remove(KEY_TOKEN)
+            .remove(KEY_LAST_PULL_AT)
             .apply()
+    }
+
+    fun getLastPullAt(): Long = encryptedPrefs.getLong(KEY_LAST_PULL_AT, 0L)
+
+    fun saveLastPullAt(time: Long) {
+        encryptedPrefs.edit().putLong(KEY_LAST_PULL_AT, time).apply()
     }
 }

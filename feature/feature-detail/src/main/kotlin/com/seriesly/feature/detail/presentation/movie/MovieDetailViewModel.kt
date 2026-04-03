@@ -88,7 +88,8 @@ class MovieDetailViewModel @Inject constructor(
     }
 
     private fun saveRating(rating: Float, comment: String?) = viewModelScope.launch {
-        progressRepository.upsertRating(userId, tvdbId, ContentType.MOVIE, rating, comment)
+        val movie = uiState.value.movie ?: return@launch
+        progressRepository.upsertRating(userId, tvdbId, ContentType.MOVIE, rating, comment, movie.title, movie.posterUrl)
         setState { copy(showRatingSheet = false) }
     }
 }

@@ -13,6 +13,7 @@ import com.seriesly.core.domain.model.ContentItem
 import com.seriesly.core.domain.model.RatedItem
 import com.seriesly.core.domain.model.UserRating
 import com.seriesly.core.domain.repository.ProgressRepository
+import com.seriesly.core.domain.repository.SyncRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -25,7 +26,8 @@ import javax.inject.Singleton
 class ProgressRepositoryImpl @Inject constructor(
     private val watchProgressDao: WatchProgressDao,
     private val ratingDao: RatingDao,
-    private val searchCacheDao: SearchCacheDao
+    private val searchCacheDao: SearchCacheDao,
+    private val syncRepository: SyncRepository,
 ) : ProgressRepository {
 
     override fun observeMovieWatched(userId: Long, tvdbId: Int): Flow<Boolean> =
@@ -41,13 +43,12 @@ class ProgressRepositoryImpl @Inject constructor(
     override fun observeAllRatings(userId: Long): Flow<List<RatedItem>> =
         ratingDao.observeAllRatings(userId)
             .map { entities ->
-                entities.mapNotNull { entity ->
-                    val cached = searchCacheDao.getByTvdbId(entity.tvdbId)
+                entities.map { entity ->
                     RatedItem(
                         tvdbId      = entity.tvdbId,
-                        title       = cached?.title ?: "Unknown",
+                        title       = entity.title.ifBlank { "Unknown" },
                         contentType = entity.contentType,
-                        posterUrl   = cached?.posterUrl,
+                        posterUrl   = entity.posterUrl,
                         rating      = entity.rating,
                         comment     = entity.comment,
                         ratedAt     = entity.updatedAt
@@ -106,6 +107,7 @@ class ProgressRepositoryImpl @Inject constructor(
                         watchedAt   = now
                     )
                 )
+                runCatching { syncRepository.pushPendingProgress() }
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("markMovieWatched failed", e))
@@ -117,11 +119,12 @@ class ProgressRepositoryImpl @Inject constructor(
         tvdbId: Int,
         type: ContentType,
         rating: Float,
-        comment: String?
+        comment: String?,
+        title: String,
+        posterUrl: String?
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val now = System.currentTimeMillis()
-            val existing = ratingDao.observeRating(userId, tvdbId, type)
             ratingDao.upsert(
                 RatingEntity(
                     userId      = userId,
@@ -129,10 +132,13 @@ class ProgressRepositoryImpl @Inject constructor(
                     contentType = type,
                     rating      = rating,
                     comment     = comment,
+                    title       = title,
+                    posterUrl   = posterUrl,
                     createdAt   = now,
                     updatedAt   = now
                 )
             )
+            runCatching { syncRepository.pushPendingRatings() }
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(AppException.DatabaseException("upsertRating failed", e))
@@ -146,6 +152,7 @@ class ProgressRepositoryImpl @Inject constructor(
                     userId = userId, tvdbId = tvdbId, contentType = type,
                     rating = 0f, comment = null, createdAt = 0L, updatedAt = 0L
                 )
+                runCatching { syncRepository.pushRatingDeletion(tvdbId, type) }
                 ratingDao.delete(entity)
                 Result.Success(Unit)
             } catch (e: Exception) {

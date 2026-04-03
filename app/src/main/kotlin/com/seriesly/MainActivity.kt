@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import com.seriesly.core.security.session.SessionManager
 import com.seriesly.core.ui.theme.SerieslyTheme
 import com.seriesly.navigation.SerieslyNavHost
+import com.seriesly.sync.SyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -31,6 +32,13 @@ class MainActivity : ComponentActivity() {
                     SerieslyNavHost(startDestination = startDestination)
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (sessionManager.isLoggedIn()) {
+            SyncWorker.enqueue(this)
         }
     }
 }

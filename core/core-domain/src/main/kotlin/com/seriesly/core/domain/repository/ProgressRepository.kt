@@ -14,6 +14,6 @@ interface ProgressRepository {
     fun observeRecentlyWatched(userId: Long, limit: Int = 12): Flow<List<ContentItem>>
     fun observeInProgressSeries(userId: Long, limit: Int = 12): Flow<List<ContentItem>>
     suspend fun markMovieWatched(userId: Long, tvdbId: Int, watched: Boolean): Result<Unit>
-    suspend fun upsertRating(userId: Long, tvdbId: Int, type: ContentType, rating: Float, comment: String?): Result<Unit>
+    suspend fun upsertRating(userId: Long, tvdbId: Int, type: ContentType, rating: Float, comment: String?, title: String, posterUrl: String?): Result<Unit>
     suspend fun deleteRating(userId: Long, tvdbId: Int, type: ContentType): Result<Unit>
 }

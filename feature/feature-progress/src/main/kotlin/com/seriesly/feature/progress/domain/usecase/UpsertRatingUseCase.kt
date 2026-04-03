@@ -9,12 +9,13 @@ import javax.inject.Inject
 
 class UpsertRatingUseCase @Inject constructor(private val repo: ProgressRepository) {
     suspend operator fun invoke(
-        userId: Long, tvdbId: Int, type: ContentType, rating: Float, comment: String?
+        userId: Long, tvdbId: Int, type: ContentType, rating: Float, comment: String?,
+        title: String, posterUrl: String?
     ): Result<Unit> {
         if (!RatingValidator.isValid(rating))
             return Result.Error(AppException.ValidationException("Rating must be between 0.5 and 5.0 in 0.5 steps"))
         if ((comment?.length ?: 0) > RatingValidator.MAX_COMMENT_LENGTH)
             return Result.Error(AppException.ValidationException("Comment too long"))
-        return repo.upsertRating(userId, tvdbId, type, rating, comment)
+        return repo.upsertRating(userId, tvdbId, type, rating, comment, title, posterUrl)
     }
 }

@@ -26,5 +26,8 @@ data class WatchlistItemEntity(
     val watchlistId: Long,
     val tvdbId: Int,
     val contentType: ContentType,
-    val addedAt: Long
+    val addedAt: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val pendingSync: Boolean = true,
+    val syncedAt: Long = 0L
 )

@@ -28,6 +28,12 @@
 -keep class com.seriesly.core.domain.model.** { *; }
 -keep class com.seriesly.core.database.entity.** { *; }
 
+# Google Tink (errorprone annotations are compile-time only, not present at runtime)
+-dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
+-dontwarn com.google.errorprone.annotations.CheckReturnValue
+-dontwarn com.google.errorprone.annotations.Immutable
+-dontwarn com.google.errorprone.annotations.RestrictedApi
+
 # Kotlin
 -keepattributes *Annotation*
 -keepclassmembers class kotlin.Metadata { *; }

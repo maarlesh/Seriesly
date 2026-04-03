@@ -126,7 +126,8 @@ class SeriesDetailViewModel @Inject constructor(
     }
 
     private fun saveRating(rating: Float, comment: String?) = viewModelScope.launch {
-        progressRepository.upsertRating(userId, tvdbId, ContentType.SERIES, rating, comment)
+        val series = uiState.value.series ?: return@launch
+        progressRepository.upsertRating(userId, tvdbId, ContentType.SERIES, rating, comment, series.title, series.posterUrl)
         setState { copy(showRatingPrompt = false) }
     }
 }

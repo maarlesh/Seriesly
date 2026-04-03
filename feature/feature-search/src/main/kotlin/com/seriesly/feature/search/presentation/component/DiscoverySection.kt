@@ -4,6 +4,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -115,6 +118,7 @@ fun RatingsRow(
 fun WatchlistsSection(
     title: String,
     watchlists: List<Watchlist>,
+    onWatchlistClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (watchlists.isEmpty()) return
@@ -126,10 +130,11 @@ fun WatchlistsSection(
         )
         watchlists.forEach { watchlist ->
             ElevatedCard(
-                modifier = Modifier
+                onClick   = { onWatchlistClick(watchlist.watchlistId) },
+                modifier  = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape    = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large
             ) {
                 Row(
                     modifier          = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -144,6 +149,11 @@ fun WatchlistsSection(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

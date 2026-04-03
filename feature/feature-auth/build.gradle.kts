@@ -31,6 +31,9 @@ dependencies {
     implementation(project(":core:core-database"))
     implementation(project(":core:core-security"))
     implementation(libs.room.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.coroutines.play.services)
     testImplementation(libs.bundles.testing.unit)
     androidTestImplementation(libs.bundles.testing.android)
 }

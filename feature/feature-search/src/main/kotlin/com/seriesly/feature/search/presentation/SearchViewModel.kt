@@ -91,7 +91,8 @@ class SearchViewModel @Inject constructor(
             setState { copy(filter = intent.filter, results = emptyList(), isLoading = hasQuery) }
             filterInput.value = intent.filter
         }
-        is SearchIntent.ItemClicked -> sendEvent(SearchEvent.NavigateToDetail(intent.tvdbId, intent.contentType))
+        is SearchIntent.ItemClicked      -> sendEvent(SearchEvent.NavigateToDetail(intent.tvdbId, intent.contentType))
+        is SearchIntent.WatchlistClicked -> sendEvent(SearchEvent.NavigateToWatchlist(intent.watchlistId))
         SearchIntent.ClearQuery     -> {
             setState { copy(query = "", results = emptyList(), error = null, isLoading = false) }
             queryInput.value = ""

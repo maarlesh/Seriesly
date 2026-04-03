@@ -20,7 +20,7 @@ import com.seriesly.core.database.migration.ALL_MIGRATIONS
         WatchProgressEntity::class,
         RatingEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

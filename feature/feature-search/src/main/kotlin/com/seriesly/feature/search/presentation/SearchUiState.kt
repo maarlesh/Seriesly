@@ -23,10 +23,12 @@ sealed interface SearchIntent {
     data class QueryChanged(val query: String) : SearchIntent
     data class FilterSelected(val filter: ContentFilter) : SearchIntent
     data class ItemClicked(val tvdbId: Int, val contentType: ContentType) : SearchIntent
+    data class WatchlistClicked(val watchlistId: Long) : SearchIntent
     object ClearQuery : SearchIntent
     object RetryClicked : SearchIntent
 }
 
 sealed interface SearchEvent {
     data class NavigateToDetail(val tvdbId: Int, val contentType: ContentType) : SearchEvent
+    data class NavigateToWatchlist(val watchlistId: Long) : SearchEvent
 }

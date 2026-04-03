@@ -77,6 +77,9 @@ interface WatchProgressDao {
     """)
     fun getInProgressSeries(userId: Long, limit: Int): Flow<List<InProgressSeriesEntry>>
 
+    @Query("SELECT * FROM watch_progress WHERE userId = :userId AND tvdbId = :tvdbId")
+    suspend fun getProgressByContent(userId: Long, tvdbId: Int): List<WatchProgressEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(progress: WatchProgressEntity)
 
@@ -84,8 +87,15 @@ interface WatchProgressDao {
     suspend fun upsertAll(progressList: List<WatchProgressEntity>)
 
     @Query("""
-        UPDATE watch_progress SET watched = :watched, watchedAt = :watchedAt
+        UPDATE watch_progress SET watched = :watched, watchedAt = :watchedAt,
+        updatedAt = :updatedAt, pendingSync = 1
         WHERE userId = :userId AND tvdbId = :tvdbId AND contentType = 'MOVIE' AND episodeId IS NULL
     """)
-    suspend fun updateMovieWatched(userId: Long, tvdbId: Int, watched: Boolean, watchedAt: Long?)
+    suspend fun updateMovieWatched(userId: Long, tvdbId: Int, watched: Boolean, watchedAt: Long?, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM watch_progress WHERE pendingSync = 1")
+    suspend fun getUnsyncedProgress(): List<WatchProgressEntity>
+
+    @Query("UPDATE watch_progress SET pendingSync = 0, syncedAt = :now WHERE progressId = :id")
+    suspend fun markProgressSynced(id: Long, now: Long)
 }

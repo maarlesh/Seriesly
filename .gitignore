@@ -19,6 +19,13 @@ captures/
 # Keystore — NEVER commit
 *.jks
 *.keystore
+app/keystore/
+
+# Release build outputs
+app/release/
+
+# Kotlin tooling cache
+.kotlin/
 
 # Secrets
 secrets.properties

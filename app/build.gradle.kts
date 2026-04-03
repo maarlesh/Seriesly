@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics.plugin)
 }
 
 val localProperties = Properties().also { props ->
@@ -32,6 +34,15 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(localProperties["keystore.storeFile"] as? String ?: "keystore/seriesly-release-key")
+            storePassword = localProperties["keystore.storePassword"] as? String ?: ""
+            keyAlias = localProperties["keystore.keyAlias"] as? String ?: ""
+            keyPassword = localProperties["keystore.keyPassword"] as? String ?: ""
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -39,6 +50,7 @@ android {
             isDebuggable = true
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -87,6 +99,18 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
+
+    implementation(libs.work.runtime.ktx)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+
+    implementation(libs.coil.compose)
 
     implementation(libs.timber)
 

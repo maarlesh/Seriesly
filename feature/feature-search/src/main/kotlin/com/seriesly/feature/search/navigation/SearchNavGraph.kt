@@ -9,9 +9,8 @@ import com.seriesly.feature.search.presentation.SearchScreen
 fun NavGraphBuilder.searchNavGraph(navController: NavHostController) {
     composable("search") {
         SearchScreen(
-            onNavigateToDetail = { tvdbId, type ->
-                navController.navigate("detail/$tvdbId/${type.name}")
-            }
+            onNavigateToDetail    = { tvdbId, type -> navController.navigate("detail/$tvdbId/${type.name}") },
+            onNavigateToWatchlist = { watchlistId  -> navController.navigate("watchlist_detail/$watchlistId") }
         )
     }
 }

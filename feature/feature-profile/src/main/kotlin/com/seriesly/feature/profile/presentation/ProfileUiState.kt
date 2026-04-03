@@ -5,6 +5,7 @@ import com.seriesly.feature.profile.domain.UserStats
 data class ProfileUiState(
     val stats: UserStats? = null,
     val isLoading: Boolean = true,
+    val isSyncing: Boolean = false,
     val showLogoutDialog: Boolean = false
 )
 

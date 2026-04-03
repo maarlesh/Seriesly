@@ -28,6 +28,10 @@ data class RatingEntity(
     val contentType: ContentType,
     val rating: Float,
     val comment: String?,
+    val title: String = "",
+    val posterUrl: String? = null,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val pendingSync: Boolean = true,
+    val syncedAt: Long = 0L
 )

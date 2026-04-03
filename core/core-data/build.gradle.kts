@@ -17,6 +17,10 @@ android {
 dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.coroutines.play.services)
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-database"))

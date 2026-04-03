@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,24 +18,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.seriesly.core.ui.theme.Primary
+import com.seriesly.core.ui.theme.*
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onNavigateToLogin: () -> Unit,
@@ -59,7 +64,7 @@ fun ProfileScreen(
             text             = { Text("Are you sure you want to sign out? Your data will be saved.") },
             confirmButton    = {
                 TextButton(onClick = { viewModel.onIntent(ProfileIntent.LogoutConfirmed) }) {
-                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    Text("Sign Out", color = Error)
                 }
             },
             dismissButton    = {
@@ -79,7 +84,6 @@ fun ProfileScreen(
         label         = "avatarScale"
     )
 
-    // Avatar pulsing border
     val ringAlpha by rememberInfiniteTransition(label = "avatarPulse").animateFloat(
         initialValue  = 0.4f,
         targetValue   = 0.9f,
@@ -90,25 +94,84 @@ fun ProfileScreen(
         label = "ringAlpha"
     )
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Profile") }) }
-    ) { padding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
         if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Primary)
             }
-            return@Scaffold
+            return@Box
         }
 
-        val stats = uiState.stats ?: return@Scaffold
+        val stats = uiState.stats ?: return@Box
 
-        LazyColumn(contentPadding = padding) {
+        // ── "Restoring your data…" banner (first-time pull only) ─────────────
+        AnimatedVisibility(
+            visible = uiState.isSyncing,
+            enter   = fadeIn(tween(300)),
+            exit    = fadeOut(tween(300)),
+            modifier = Modifier.align(Alignment.TopCenter).zIndex(1f)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SurfaceContainerLow)
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier  = Modifier.size(16.dp),
+                    color     = Primary,
+                    strokeWidth = 2.dp
+                )
+                Text(
+                    text  = "Restoring your data…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnSurfaceVariant
+                )
+            }
+        }
+
+        LazyColumn(contentPadding = PaddingValues(bottom = 100.dp)) {
+
+            // ── Editorial header ──────────────────────────────────────────
+            item {
+                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint               = Secondary,
+                            modifier           = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text  = "CINEPHILE IDENTITY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Outline
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text  = "Your Profile",
+                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                        color = OnSurface
+                    )
+                }
+            }
+
+            // ── Avatar + username ─────────────────────────────────────────
             item {
                 Column(
-                    modifier            = Modifier.fillMaxWidth().padding(24.dp),
+                    modifier            = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Pulsing avatar
                     Box(
                         modifier = Modifier
                             .size(88.dp)
@@ -116,13 +179,13 @@ fun ProfileScreen(
                             .border(3.dp, Primary.copy(alpha = ringAlpha), CircleShape)
                             .padding(4.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .background(PrimaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text  = stats.username.first().uppercase(),
                             style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = OnPrimary
                         )
                     }
                     Spacer(Modifier.height(12.dp))
@@ -131,7 +194,11 @@ fun ProfileScreen(
                         visible = launched,
                         enter   = slideInVertically(tween(300, delayMillis = 150)) { 20 } + fadeIn(tween(300, delayMillis = 150))
                     ) {
-                        Text(stats.username, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text  = stats.username,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = OnSurface
+                        )
                     }
 
                     AnimatedVisibility(
@@ -141,14 +208,14 @@ fun ProfileScreen(
                         Text(
                             text  = "Member since ${formatDate(stats.memberSince)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = OnSurfaceVariant
                         )
                     }
                 }
             }
 
+            // ── Stats row ─────────────────────────────────────────────────
             item {
-                // Column provides ColumnScope for AnimatedVisibility
                 Column {
                     AnimatedVisibility(
                         visible = launched,
@@ -174,55 +241,100 @@ fun ProfileScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
+            // ── My Ratings row ────────────────────────────────────────────
             item {
                 Column {
                     AnimatedVisibility(
                         visible = launched,
                         enter   = slideInVertically(tween(300, delayMillis = 320)) { 20 } + fadeIn(tween(300, delayMillis = 320))
                     ) {
-                        ElevatedCard(
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            shape    = MaterialTheme.shapes.large,
-                            onClick  = { viewModel.onIntent(ProfileIntent.MyRatingsClicked) }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .clickable { viewModel.onIntent(ProfileIntent.MyRatingsClicked) }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            ListItem(
-                                headlineContent = { Text("My Ratings") },
-                                leadingContent  = { Icon(Icons.Outlined.Star, contentDescription = null) },
-                                trailingContent = {
-                                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
-                                }
-                            )
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Outlined.Star, contentDescription = null, tint = Tertiary)
+                                Text(
+                                    text  = "My Ratings",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = OnSurface
+                                )
+                            }
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Outline)
                         }
                     }
                 }
             }
 
+            // ── Privacy policy row ────────────────────────────────────────
+            item {
+                val uriHandler = LocalUriHandler.current
+                Column {
+                    AnimatedVisibility(
+                        visible = launched,
+                        enter   = slideInVertically(tween(300, delayMillis = 345)) { 20 } + fadeIn(tween(300, delayMillis = 345))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .clickable { uriHandler.openUri("https://maarlesh.github.io/Seriesly/privacy-policy") }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Outlined.PrivacyTip, contentDescription = null, tint = Secondary)
+                                Text(
+                                    text  = "Privacy Policy",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = OnSurface
+                                )
+                            }
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Outline)
+                        }
+                    }
+                }
+            }
+
+            // ── Sign out row ──────────────────────────────────────────────
             item {
                 Column {
                     AnimatedVisibility(
                         visible = launched,
                         enter   = slideInVertically(tween(300, delayMillis = 370)) { 20 } + fadeIn(tween(300, delayMillis = 370))
                     ) {
-                        ElevatedCard(
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            shape    = MaterialTheme.shapes.large,
-                            onClick  = { viewModel.onIntent(ProfileIntent.LogoutClicked) }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .clickable { viewModel.onIntent(ProfileIntent.LogoutClicked) }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            ListItem(
-                                headlineContent = {
-                                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
-                                },
-                                leadingContent  = {
-                                    Icon(
-                                        imageVector        = Icons.AutoMirrored.Outlined.Logout,
-                                        contentDescription = null,
-                                        tint               = MaterialTheme.colorScheme.error
-                                    )
-                                }
+                            Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = Error)
+                            Text(
+                                text  = "Sign Out",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Error
                             )
                         }
                     }
@@ -245,24 +357,23 @@ private fun StatCard(label: String, targetCount: Int, modifier: Modifier = Modif
         displayCount = targetCount
     }
 
-    ElevatedCard(
-        modifier  = modifier,
-        shape     = MaterialTheme.shapes.large,
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceContainerLow)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier            = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text       = displayCount.toString(),
-                style      = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                text  = displayCount.toString(),
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = Primary
             )
             Text(
                 text  = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = OnSurfaceVariant
             )
         }
     }

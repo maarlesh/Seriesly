@@ -11,6 +11,7 @@ import androidx.room.withTransaction
 import com.seriesly.core.domain.model.SeriesProgress
 import com.seriesly.core.domain.model.SeriesWatchStatus
 import com.seriesly.core.domain.repository.SeriesProgressRepository
+import com.seriesly.core.domain.repository.SyncRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -25,7 +26,8 @@ import javax.inject.Singleton
 class SeriesProgressRepositoryImpl @Inject constructor(
     private val watchProgressDao: WatchProgressDao,
     private val seriesDao: SeriesDao,
-    private val db: AppDatabase
+    private val db: AppDatabase,
+    private val syncRepository: SyncRepository,
 ) : SeriesProgressRepository {
 
     override fun observeSeriesProgress(userId: Long, tvdbId: Int): Flow<SeriesProgress> =
@@ -65,6 +67,7 @@ class SeriesProgressRepositoryImpl @Inject constructor(
                     watchedAt   = if (watched) System.currentTimeMillis() else null
                 )
             )
+            runCatching { syncRepository.pushPendingProgress() }
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(AppException.DatabaseException("markEpisodeWatched failed", e))
@@ -87,6 +90,7 @@ class SeriesProgressRepositoryImpl @Inject constructor(
                 )
             }
             db.withTransaction { watchProgressDao.upsertAll(progressList) }
+            runCatching { syncRepository.pushPendingProgress() }
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(AppException.DatabaseException("markSeasonEpisodesWatched failed", e))
@@ -111,6 +115,7 @@ class SeriesProgressRepositoryImpl @Inject constructor(
                 )
             }
             db.withTransaction { watchProgressDao.upsertAll(progressList) }
+            runCatching { syncRepository.pushPendingProgress() }
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(AppException.DatabaseException("markAllAiredWatched failed", e))

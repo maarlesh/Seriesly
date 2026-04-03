@@ -46,4 +46,20 @@ interface SeriesDao {
 
     @Query("DELETE FROM series WHERE cachedAt < :expiryThreshold")
     suspend fun deleteExpired(expiryThreshold: Long)
+
+    @Query("""
+        DELETE FROM series
+        WHERE cachedAt < :threshold
+        AND tvdbId NOT IN (SELECT tvdbId FROM watchlist_items WHERE contentType = 'SERIES')
+        AND tvdbId NOT IN (SELECT DISTINCT tvdbId FROM watch_progress WHERE contentType = 'SERIES')
+    """)
+    suspend fun pruneStaleSeriesNotReferenced(threshold: Long)
+
+    @Query("""
+        DELETE FROM episodes
+        WHERE cachedAt < :threshold
+        AND seriesTvdbId NOT IN (SELECT tvdbId FROM watchlist_items WHERE contentType = 'SERIES')
+        AND seriesTvdbId NOT IN (SELECT DISTINCT tvdbId FROM watch_progress WHERE contentType = 'SERIES')
+    """)
+    suspend fun pruneStaleEpisodesNotReferenced(threshold: Long)
 }

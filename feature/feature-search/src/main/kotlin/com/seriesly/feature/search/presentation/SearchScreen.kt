@@ -20,9 +20,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.seriesly.core.ui.theme.Background
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.seriesly.core.common.model.ContentType
@@ -40,6 +42,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchScreen(
     onNavigateToDetail: (Int, ContentType) -> Unit,
+    onNavigateToWatchlist: (Long) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,13 +50,13 @@ fun SearchScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is SearchEvent.NavigateToDetail ->
-                    onNavigateToDetail(event.tvdbId, event.contentType)
+                is SearchEvent.NavigateToDetail   -> onNavigateToDetail(event.tvdbId, event.contentType)
+                is SearchEvent.NavigateToWatchlist -> onNavigateToWatchlist(event.watchlistId)
             }
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().background(Background)) {
         SearchBar(
             query    = uiState.query,
             onChange = { viewModel.onIntent(SearchIntent.QueryChanged(it)) },
@@ -119,8 +122,9 @@ fun SearchScreen(
                             }
                             item {
                                 WatchlistsSection(
-                                    title      = "Your Watchlists",
-                                    watchlists = uiState.watchlists
+                                    title            = "Your Watchlists",
+                                    watchlists       = uiState.watchlists,
+                                    onWatchlistClick = { viewModel.onIntent(SearchIntent.WatchlistClicked(it)) }
                                 )
                             }
                             item { Spacer(Modifier.height(16.dp)) }

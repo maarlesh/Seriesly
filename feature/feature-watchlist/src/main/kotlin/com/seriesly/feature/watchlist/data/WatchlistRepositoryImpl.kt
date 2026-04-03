@@ -5,12 +5,14 @@ import com.seriesly.core.common.result.AppException
 import com.seriesly.core.common.result.Result
 import com.seriesly.core.database.dao.SearchCacheDao
 import com.seriesly.core.database.dao.WatchlistDao
+import com.seriesly.core.database.dao.WatchlistWithCounts
 import com.seriesly.core.database.entity.WatchlistEntity
 import com.seriesly.core.database.entity.WatchlistItemEntity
 import com.seriesly.core.domain.model.ContentFilter
 import com.seriesly.core.domain.model.ContentItem
 import com.seriesly.core.domain.model.Watchlist
 import com.seriesly.core.domain.model.WatchlistItem
+import com.seriesly.core.domain.repository.SyncRepository
 import com.seriesly.core.domain.repository.WatchlistRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -23,12 +25,13 @@ import javax.inject.Singleton
 @Singleton
 class WatchlistRepositoryImpl @Inject constructor(
     private val watchlistDao: WatchlistDao,
-    private val searchCacheDao: SearchCacheDao
+    private val searchCacheDao: SearchCacheDao,
+    private val syncRepository: SyncRepository,
 ) : WatchlistRepository {
 
     override fun observeWatchlists(userId: Long): Flow<List<Watchlist>> =
-        watchlistDao.observeByUser(userId).map { entities ->
-            entities.map { it.toDomain() }
+        watchlistDao.observeByUserWithCounts(userId).map { rows ->
+            rows.map { it.toDomain() }
         }.flowOn(Dispatchers.IO)
 
     override fun observeItems(watchlistId: Long, type: ContentFilter): Flow<List<WatchlistItem>> =
@@ -64,6 +67,7 @@ class WatchlistRepositoryImpl @Inject constructor(
                 val id = watchlistDao.insert(
                     WatchlistEntity(userId = userId, name = name, isDefault = false, createdAt = System.currentTimeMillis())
                 )
+                runCatching { syncRepository.pushPendingWatchlists() }
                 Result.Success(id)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("Failed to create watchlist", e))
@@ -75,7 +79,8 @@ class WatchlistRepositoryImpl @Inject constructor(
             try {
                 val entity = watchlistDao.getById(watchlistId)
                     ?: return@withContext Result.Error(AppException.DatabaseException("Not found", Exception()))
-                watchlistDao.update(entity.copy(name = name))
+                watchlistDao.update(entity.copy(name = name, updatedAt = System.currentTimeMillis(), pendingSync = true))
+                runCatching { syncRepository.pushPendingWatchlists() }
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("Rename failed", e))
@@ -86,6 +91,11 @@ class WatchlistRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val entity = watchlistDao.getById(watchlistId) ?: return@withContext Result.Success(Unit)
+                // Soft-delete all items in Firestore before Room cascade-deletes them
+                watchlistDao.getItemsByWatchlistId(watchlistId).forEach { item ->
+                    runCatching { syncRepository.pushWatchlistItemDeletion(item.itemId) }
+                }
+                runCatching { syncRepository.pushWatchlistDeletion(watchlistId) }
                 watchlistDao.delete(entity)
                 Result.Success(Unit)
             } catch (e: Exception) {
@@ -99,8 +109,9 @@ class WatchlistRepositoryImpl @Inject constructor(
                 val inserted = watchlistDao.insertItem(
                     WatchlistItemEntity(watchlistId = watchlistId, tvdbId = tvdbId, contentType = type, addedAt = System.currentTimeMillis())
                 )
-                if (inserted == -1L) Result.Error(AppException.ValidationException("Already in this watchlist"))
-                else Result.Success(Unit)
+                if (inserted == -1L) return@withContext Result.Error(AppException.ValidationException("Already in this watchlist"))
+                runCatching { syncRepository.pushPendingWatchlists() }
+                Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("Add failed", e))
             }
@@ -109,9 +120,11 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun removeItem(watchlistId: Long, tvdbId: Int, type: ContentType): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                watchlistDao.deleteItem(
-                    WatchlistItemEntity(watchlistId = watchlistId, tvdbId = tvdbId, contentType = type, addedAt = 0L)
-                )
+                val item = watchlistDao.getItem(watchlistId, tvdbId, type)
+                if (item != null) {
+                    runCatching { syncRepository.pushWatchlistItemDeletion(item.itemId) }
+                }
+                watchlistDao.deleteItemByContent(watchlistId, tvdbId, type)
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("Remove failed", e))
@@ -122,8 +135,11 @@ class WatchlistRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 orderedIds.forEachIndexed { index, id ->
-                    watchlistDao.getById(id)?.let { watchlistDao.update(it.copy(sortOrder = index)) }
+                    watchlistDao.getById(id)?.let {
+                        watchlistDao.update(it.copy(sortOrder = index, updatedAt = System.currentTimeMillis(), pendingSync = true))
+                    }
                 }
+                runCatching { syncRepository.pushPendingWatchlists() }
                 Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(AppException.DatabaseException("Reorder failed", e))
@@ -140,11 +156,13 @@ class WatchlistRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) { watchlistDao.countForUser(userId) }
 }
 
-private fun WatchlistEntity.toDomain() = Watchlist(
+private fun WatchlistWithCounts.toDomain() = Watchlist(
     watchlistId = watchlistId,
     name        = name,
     isDefault   = isDefault,
-    sortOrder   = sortOrder
+    sortOrder   = sortOrder,
+    movieCount  = movieCount,
+    seriesCount = seriesCount
 )
 
 private fun WatchlistItemEntity.toDomain() = WatchlistItem(

@@ -29,5 +29,8 @@ data class WatchProgressEntity(
     val contentType: ContentType,
     val episodeId: Int?,
     val watched: Boolean,
-    val watchedAt: Long?
+    val watchedAt: Long?,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val pendingSync: Boolean = true,
+    val syncedAt: Long = 0L
 )
