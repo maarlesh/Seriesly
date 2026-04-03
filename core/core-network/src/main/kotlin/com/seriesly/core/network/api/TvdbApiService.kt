@@ -38,4 +38,11 @@ interface TvdbApiService {
 
     @GET("seasons/{id}/extended")
     suspend fun getSeasonExtended(@Path("id") id: Int): TvdbResponseDto<SeasonDto>
+
+    @GET("series/{id}/episodes/official/{lang}")
+    suspend fun getSeriesEpisodesByLanguage(
+        @Path("id")   id: Int,
+        @Path("lang") lang: String = "eng",
+        @Query("page") page: Int = 0
+    ): TvdbResponseDto<SeriesEpisodesPageDto>
 }

@@ -8,6 +8,7 @@ import com.seriesly.core.domain.model.Season
 import com.seriesly.core.domain.model.Series
 import com.seriesly.core.domain.repository.ContentDetailRepository
 import com.seriesly.core.network.api.TvdbApiService
+import com.seriesly.core.network.dto.response.EpisodeDto
 import com.seriesly.core.network.mapper.toEntity
 import com.seriesly.core.network.util.safeApiCall
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +63,18 @@ class DetailRepositoryImpl @Inject constructor(
             return@withContext Result.Success(cached.toDomain(seasons, epsBySeason))
         }
 
+        val engEpisodes = try {
+            val all = mutableListOf<EpisodeDto>()
+            var page = 0
+            while (true) {
+                val response = apiService.getSeriesEpisodesByLanguage(tvdbId, "eng", page)
+                all.addAll(response.data?.episodes ?: emptyList())
+                if (response.links?.next == null) break
+                page++
+            }
+            all.ifEmpty { null }
+        } catch (_: Exception) { null }
+
         val networkResult = safeApiCall(
             tag     = "SeriesDetail",
             apiCall = { apiService.getSeriesExtended(tvdbId) },
@@ -73,9 +86,11 @@ class DetailRepositoryImpl @Inject constructor(
                 }.ifEmpty { allSeasons }  // fall back to all if no type info
                 val seasonEntities  = officialSeasons.map { s -> s.toEntity(tvdbId, now) }
                 val seasonNumToId   = officialSeasons.associate { it.number to it.id }
+                val engEpisodeMap   = engEpisodes?.associateBy { it.id } ?: emptyMap()
                 val episodeEntities = dto.episodes?.mapNotNull { e ->
                     val seasonId = e.seasonNumber?.let { seasonNumToId[it] } ?: return@mapNotNull null
-                    e.toEntity(seasonId, tvdbId, now)
+                    val engEp = engEpisodeMap[e.id] ?: e
+                    engEp.toEntity(seasonId, tvdbId, now)
                 } ?: emptyList()
                 Triple(seriesEntity, seasonEntities, episodeEntities)
             }
