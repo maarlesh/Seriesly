@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seriesly — Privacy Policy</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #050A14;
+      color: #C8D6F0;
+      line-height: 1.7;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      border-bottom: 1px solid #131B2E;
+      padding-bottom: 2rem;
+    }
+
+    .logo {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ADC6FF;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: #4EDEA3; }
+
+    header p {
+      margin-top: 0.5rem;
+      color: #6B7A99;
+      font-size: 0.9rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #E8EFFF;
+      margin-bottom: 0.4rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ADC6FF;
+      margin: 2.5rem 0 0.75rem;
+    }
+
+    p { margin-bottom: 1rem; color: #A8B8D8; }
+
+    ul {
+      margin: 0.5rem 0 1rem 1.5rem;
+      color: #A8B8D8;
+    }
+
+    ul li { margin-bottom: 0.4rem; }
+
+    a { color: #4EDEA3; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .updated {
+      display: inline-block;
+      font-size: 0.8rem;
+      color: #6B7A99;
+      background: #131B2E;
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #131B2E;
+      font-size: 0.85rem;
+      color: #6B7A99;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Series<span>ly</span></div>
+      <p>Track the shows you love.</p>
+    </header>
+
+    <h1>Privacy Policy</h1>
+    <span class="updated">Last updated: April 3, 2026</span>
+
+    <p>
+      Seriesly ("we", "our", or "the app") is a personal TV series and movie tracker built for
+      Android. This policy explains what information we collect, how we use it, and your rights
+      regarding that information. We are committed to keeping your data minimal and secure.
+    </p>
+
+    <h2>1. Information We Collect</h2>
+    <p>We collect only what is necessary to provide the app's core features:</p>
+    <ul>
+      <li>
+        <strong>Account credentials</strong> — A username and hashed password stored locally on
+        your device. We never store plaintext passwords.
+      </li>
+      <li>
+        <strong>Watchlists and ratings</strong> — Lists you create and ratings you assign to
+        series and movies, synced to your personal Firebase account so you can restore them on
+        a new device.
+      </li>
+      <li>
+        <strong>Watch progress</strong> — Which episodes and movies you have marked as watched,
+        synced in the same way.
+      </li>
+    </ul>
+    <p>
+      We do <strong>not</strong> collect your real name, phone number, location, contacts,
+      device identifiers, or any advertising identifiers.
+    </p>
+
+    <h2>2. How We Use Your Information</h2>
+    <ul>
+      <li>To display your watchlists, ratings, and progress across sessions.</li>
+      <li>To restore your data when you sign in on a new device.</li>
+      <li>To diagnose crashes and improve app stability (via Firebase Crashlytics — see below).</li>
+    </ul>
+    <p>We do <strong>not</strong> use your data for advertising, profiling, or sale to third parties.</p>
+
+    <h2>3. Third-Party Services</h2>
+
+    <p><strong>TVDB API (thetvdb.com)</strong><br />
+    Series and movie metadata (titles, descriptions, artwork, episode lists) is fetched from the
+    TVDB v4 API. Your personal data is never sent to TVDB. Requests contain only content
+    identifiers (e.g. a series ID). TVDB's own privacy policy applies to their service.</p>
+
+    <p><strong>Firebase (Google LLC)</strong><br />
+    We use two Firebase services:</p>
+    <ul>
+      <li>
+        <strong>Cloud Firestore</strong> — stores your watchlists, ratings, and progress under
+        a unique user ID. Data is protected by Firestore security rules that allow only you to
+        read or write your own documents.
+      </li>
+      <li>
+        <strong>Firebase Crashlytics</strong> — collects anonymised crash reports (stack traces,
+        device model, OS version) to help us fix bugs. No personally identifiable information
+        is included in crash reports.
+      </li>
+    </ul>
+    <p>
+      Google's privacy policy applies to all Firebase services:
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a>
+    </p>
+
+    <h2>4. Data Storage and Security</h2>
+    <ul>
+      <li>Your data is stored locally in an encrypted SQLite database on your device (Android Keystore).</li>
+      <li>Cloud sync data is stored in Firebase Firestore with per-user security rules.</li>
+      <li>Passwords are hashed with bcrypt before storage — we never hold your plaintext password.</li>
+      <li>All network communication uses HTTPS. The app does not allow cleartext traffic.</li>
+    </ul>
+
+    <h2>5. Data Retention and Deletion</h2>
+    <p>
+      Your data is retained for as long as your account exists. To delete all your data,
+      uninstall the app (this wipes the local database) and contact us at the email below
+      to request deletion of your Firestore data. We will process deletion requests within
+      30 days.
+    </p>
+
+    <h2>6. Children's Privacy</h2>
+    <p>
+      Seriesly is not directed at children under 13. We do not knowingly collect personal
+      information from children. If you believe a child has provided us with personal data,
+      please contact us and we will delete it promptly.
+    </p>
+
+    <h2>7. Changes to This Policy</h2>
+    <p>
+      We may update this policy from time to time. The "Last updated" date at the top of this
+      page reflects the most recent revision. Continued use of the app after changes constitutes
+      acceptance of the updated policy.
+    </p>
+
+    <h2>8. Contact</h2>
+    <p>
+      For privacy questions or data deletion requests, contact us at:<br />
+      <a href="mailto:subamaarleshbaskar@gmail.com">subamaarleshbaskar@gmail.com</a>
+    </p>
+
+    <footer>
+      &copy; 2026 Seriesly &mdash; All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
