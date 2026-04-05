@@ -7,6 +7,7 @@ import coil.Coil
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.seriesly.sync.CacheEvictionWorker
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -16,6 +17,7 @@ import javax.inject.Inject
 class SerieslyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var remoteConfig: FirebaseRemoteConfig
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -27,6 +29,7 @@ class SerieslyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        remoteConfig.fetchAndActivate()
         Coil.setImageLoader(this)
         CacheEvictionWorker.enqueue(this)
     }

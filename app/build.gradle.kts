@@ -27,11 +27,7 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField(
-            "String",
-            "TVDB_API_KEY",
-            "\"${localProperties["tvdb_api_key"] ?: System.getenv("TVDB_API_KEY") ?: ""}\""
-        )
+        buildConfigField("String", "TVDB_API_KEY", "\"\"")
     }
 
     signingConfigs {
@@ -48,6 +44,11 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
+            buildConfigField(
+                "String",
+                "TVDB_API_KEY",
+                "\"${localProperties["tvdb_api_key"] ?: System.getenv("TVDB_API_KEY") ?: ""}\""
+            )
         }
         release {
             signingConfig = signingConfigs.getByName("release")
@@ -109,6 +110,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.config)
 
     implementation(libs.coil.compose)
 

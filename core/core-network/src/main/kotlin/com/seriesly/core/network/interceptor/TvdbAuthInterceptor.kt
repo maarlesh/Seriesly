@@ -1,5 +1,6 @@
 package com.seriesly.core.network.interceptor
 
+import com.seriesly.core.network.TvdbApiKeyProvider
 import com.seriesly.core.network.api.TvdbApiService
 import com.seriesly.core.network.dto.request.LoginRequestDto
 import com.seriesly.core.network.token.TvdbTokenStore
@@ -19,7 +20,7 @@ import javax.inject.Singleton
 class TvdbAuthInterceptor @Inject constructor(
     private val tokenStore: TvdbTokenStore,
     private val apiService: Lazy<TvdbApiService>,
-    private val apiKey: String
+    private val apiKeyProvider: TvdbApiKeyProvider
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -40,7 +41,7 @@ class TvdbAuthInterceptor @Inject constructor(
         chain.request().newBuilder().header("Authorization", "Bearer $token").build()
 
     private fun refreshToken(): String {
-        val token = apiService.get().loginSync(LoginRequestDto(apiKey)).execute()
+        val token = apiService.get().loginSync(LoginRequestDto(apiKeyProvider.getKey())).execute()
             .body()?.data?.token
             ?: throw IllegalStateException("TVDB login returned null token — check API key")
         tokenStore.saveToken(token)

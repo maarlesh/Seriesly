@@ -1,6 +1,7 @@
 package com.seriesly.core.network.di
 
 import android.content.SharedPreferences
+import com.seriesly.core.network.TvdbApiKeyProvider
 import com.seriesly.core.network.api.TvdbApiService
 import com.seriesly.core.network.interceptor.TvdbAuthInterceptor
 import com.seriesly.core.network.token.TvdbTokenStore
@@ -16,7 +17,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -33,8 +33,8 @@ object NetworkModule {
     fun provideAuthInterceptor(
         tokenStore: TvdbTokenStore,
         api: Lazy<TvdbApiService>,
-        @Named("tvdb_api_key") apiKey: String
-    ) = TvdbAuthInterceptor(tokenStore, api, apiKey)
+        apiKeyProvider: TvdbApiKeyProvider
+    ) = TvdbAuthInterceptor(tokenStore, api, apiKeyProvider)
 
     @Provides @Singleton
     fun provideOkHttpClient(auth: TvdbAuthInterceptor): OkHttpClient =
