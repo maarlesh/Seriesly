@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seriesly — Delete Account</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #050A14;
+      color: #C8D6F0;
+      line-height: 1.7;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      border-bottom: 1px solid #131B2E;
+      padding-bottom: 2rem;
+    }
+
+    .logo {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ADC6FF;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: #4EDEA3; }
+
+    header p {
+      margin-top: 0.5rem;
+      color: #6B7A99;
+      font-size: 0.9rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #E8EFFF;
+      margin-bottom: 0.4rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ADC6FF;
+      margin: 2.5rem 0 0.75rem;
+    }
+
+    p { margin-bottom: 1rem; color: #A8B8D8; }
+
+    ul {
+      margin: 0.5rem 0 1rem 1.5rem;
+      color: #A8B8D8;
+    }
+
+    ul li { margin-bottom: 0.4rem; }
+
+    a { color: #4EDEA3; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .updated {
+      display: inline-block;
+      font-size: 0.8rem;
+      color: #6B7A99;
+      background: #131B2E;
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #0D1526;
+      border: 1px solid #1A2540;
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .step:last-child { margin-bottom: 0; }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: #1A2F5A;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #ADC6FF;
+      margin-top: 0.15rem;
+    }
+
+    .step-content strong {
+      display: block;
+      color: #E8EFFF;
+      margin-bottom: 0.2rem;
+    }
+
+    .step-content p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .warning-box {
+      background: #1A1200;
+      border: 1px solid #3D2E00;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      color: #C8A94E;
+      font-size: 0.92rem;
+    }
+
+    .email-btn {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.75rem 1.75rem;
+      background: #4EDEA3;
+      color: #050A14;
+      font-weight: 700;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
+
+    .email-btn:hover {
+      background: #3BC98E;
+      text-decoration: none;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #131B2E;
+      font-size: 0.85rem;
+      color: #6B7A99;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Series<span>ly</span></div>
+      <p>Track the shows you love.</p>
+    </header>
+
+    <h1>Delete Your Account</h1>
+    <span class="updated">Last updated: April 5, 2026</span>
+
+    <p>
+      You can request deletion of your Seriesly account and all associated data at any time.
+      Once deleted, your watch progress, ratings, and watchlists cannot be recovered.
+    </p>
+
+    <h2>What gets deleted</h2>
+    <ul>
+      <li>Your Firebase Authentication account (email &amp; hashed password)</li>
+      <li>All watch progress stored in Firebase Firestore</li>
+      <li>All ratings and watchlists stored in Firebase Firestore</li>
+      <li>Local app data is removed when you uninstall the app</li>
+    </ul>
+
+    <h2>How to request deletion</h2>
+
+    <div class="card">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <strong>Send us an email</strong>
+          <p>Email us from the address linked to your Seriesly account so we can verify ownership.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <strong>Include your account email</strong>
+          <p>Write "Account deletion request" in the subject line and include the email address you registered with.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <strong>We'll confirm and delete</strong>
+          <p>We will verify the request and permanently delete your account and all associated data within <strong>7 days</strong>. You'll receive a confirmation email when done.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      &#9888;&nbsp; Deletion is permanent and irreversible. All your watch progress, ratings, and watchlists will be lost.
+    </div>
+
+    <a class="email-btn" href="mailto:subamaarleshbaskar@gmail.com?subject=Account%20deletion%20request">
+      Send Deletion Request
+    </a>
+
+    <h2>Need help instead?</h2>
+    <p>
+      If you're having trouble with the app and don't actually want to delete your account,
+      feel free to reach out at <a href="mailto:subamaarleshbaskar@gmail.com">subamaarleshbaskar@gmail.com</a>
+      and we'll help you out.
+    </p>
+
+    <footer>
+      &copy; 2026 Seriesly &mdash; <a href="privacy-policy.html">Privacy Policy</a>
+    </footer>
+  </div>
+</body>
+</html>
