@@ -20,7 +20,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.seriesly"
+        applicationId = "com.maarlesh.seriesly"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:389605849751:android:0e8182dff52092ef77c7d2",
+        "android_client_info": {
+          "package_name": "com.maarlesh.seriesly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsj761abqWU0p5V6E9jP1KzrqPIgXX6l4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:389605849751:android:f593e90b7951abf277c7d2",
         "android_client_info": {
           "package_name": "com.seriesly"
