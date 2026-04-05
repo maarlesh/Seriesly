@@ -1,12 +1,10 @@
 # Seriesly
 
-A polished Android app for discovering, tracking, and rating movies and TV series — built entirely with Jetpack Compose and Material 3.
+A polished Android app for discovering, tracking, and rating movies and TV series — built entirely with Jetpack Compose and Material 3, with cloud sync via Firebase Firestore.
 
 ---
 
 ## Screenshots
-
-> Add your screenshots to a `screenshots/` folder in the repo root and update the paths below.
 
 | Search & Discover | Series Detail | Episode Tracking |
 |:-----------------:|:-------------:|:----------------:|
@@ -27,9 +25,10 @@ A polished Android app for discovering, tracking, and rating movies and TV serie
 - **Progress Overview** — Animated progress bar per series shows exactly how far through you are
 - **Watchlists** — Create and manage multiple named watchlists; add any movie or series to one or more lists
 - **Ratings** — Rate any title out of 5 stars with an optional comment; view all your ratings in one place
+- **Cloud Sync** — Watch progress, ratings, and watchlists sync across devices via Firebase Firestore; offline writes are queued and flushed automatically when connectivity returns
 - **Celebration Moments** — Particle burst + banner animation when you complete a series
 - **Profile** — Animated stats (watchlist count, total ratings) with a count-up effect
-- **Offline-first** — Search results and detail pages are cached locally; your watch progress and ratings are stored on-device
+- **Offline-first** — Search results and detail pages are cached locally; your watch progress and ratings are stored on-device and synced to the cloud
 
 ---
 
@@ -45,6 +44,11 @@ A polished Android app for discovering, tracking, and rating movies and TV serie
 | Networking | Retrofit 2.11 + OkHttp 4.12 |
 | JSON | Moshi 1.15 |
 | Images | Coil 2.7 |
+| Cloud Sync | Firebase Firestore (offline-safe, last-write-wins merge) |
+| Auth | Firebase Authentication (email/password) |
+| Remote Config | Firebase Remote Config (runtime API key delivery) |
+| Crash Reporting | Firebase Crashlytics + Analytics |
+| Background Work | WorkManager (offline sync queue, cache eviction) |
 | Security | AndroidX Security Crypto (EncryptedSharedPreferences) + JBCrypt |
 | Async | Kotlin Coroutines + Flow |
 | Logging | Timber |
@@ -62,9 +66,9 @@ app/
 │   ├── core-common        # Result types, base classes, extensions
 │   ├── core-database      # Room DAOs, entities, AppDatabase
 │   ├── core-domain        # Domain models, repository interfaces
-│   ├── core-data          # Shared data utilities
+│   ├── core-data          # SyncRepository, FirestoreSyncRepository, SyncMerger
 │   ├── core-network       # Retrofit, OkHttp, TVDB API service
-│   ├── core-ui            # Shared Compose components, theme, tokens
+│   ├── core-ui            # Shared Compose components, Cinematic Obsidian theme
 │   └── core-security      # SessionManager, EncryptedPrefs
 └── feature/
     ├── feature-auth       # Login & registration screens
@@ -77,6 +81,26 @@ app/
 
 Each feature module contains its own `presentation/`, `domain/`, `data/`, `di/`, and `navigation/` packages. Feature modules depend only on `core-*` modules — never on each other.
 
+### Cloud Sync Flow
+
+```
+User action
+    │
+    ▼
+Room  ←──────────────── write immediately (offline-safe)
+    │
+    ▼
+SyncRepository
+    ├── online  → push delta to Firestore now
+    └── offline → enqueue SyncWorker (WorkManager) → flush on reconnect
+
+App launch / sign-in on new device
+    ▼
+Firestore pull → merge into Room (last-write-wins on updatedAt)
+```
+
+Firestore document path: `users/{firebaseUid}/{collection}/{docId}`
+
 ---
 
 ## Getting Started
@@ -86,6 +110,7 @@ Each feature module contains its own `presentation/`, `domain/`, `data/`, `di/`,
 - Android Studio Hedgehog or newer
 - JDK 17
 - A free [TVDB API key](https://thetvdb.com/api-information)
+- A Firebase project with Firestore, Authentication (Email/Password), Remote Config, and Crashlytics enabled
 
 ### Setup
 
@@ -95,14 +120,23 @@ Each feature module contains its own `presentation/`, `domain/`, `data/`, `di/`,
    cd Seriesly
    ```
 
-2. **Add your TVDB API key**
+2. **Add your Firebase config**
 
-   Create a `local.properties` file in the project root (it's already in `.gitignore`):
+   Place your `google-services.json` in the `app/` directory (download from Firebase Console → Project settings → Your apps).
+
+3. **Add your TVDB API key to Firebase Remote Config**
+
+   In Firebase Console → Remote Config, create a parameter named `tvdb_api_key` and set its value to your TVDB API key. The app fetches this at runtime — no key is stored in the APK.
+
+4. **(Optional) Local debug key via `local.properties`**
+
+   For local debug builds only, you can add a fallback key:
    ```properties
    TVDB_API_KEY=your_api_key_here
    ```
+   This is already in `.gitignore` and ignored in release builds.
 
-3. **Build & run**
+5. **Build & run**
 
    Open the project in Android Studio and run the `app` configuration on a device or emulator running Android 8.0+ (API 26+).
 
@@ -114,6 +148,12 @@ Each feature module contains its own `presentation/`, `domain/`, `data/`, `di/`,
 - **Target SDK:** Android 15 (API 35)
 - **Language:** Kotlin 2.0
 - **Build tools:** AGP 8.5, Gradle with version catalog
+
+---
+
+## Privacy Policy
+
+[https://maarlesh.github.io/Seriesly/privacy-policy](https://maarlesh.github.io/Seriesly/privacy-policy)
 
 ---
 
