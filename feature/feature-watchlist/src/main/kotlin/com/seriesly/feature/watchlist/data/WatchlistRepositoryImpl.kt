@@ -3,7 +3,9 @@ package com.seriesly.feature.watchlist.data
 import com.seriesly.core.common.model.ContentType
 import com.seriesly.core.common.result.AppException
 import com.seriesly.core.common.result.Result
+import com.seriesly.core.database.dao.MovieDao
 import com.seriesly.core.database.dao.SearchCacheDao
+import com.seriesly.core.database.dao.SeriesDao
 import com.seriesly.core.database.dao.WatchlistDao
 import com.seriesly.core.database.dao.WatchlistWithCounts
 import com.seriesly.core.database.entity.WatchlistEntity
@@ -26,6 +28,8 @@ import javax.inject.Singleton
 class WatchlistRepositoryImpl @Inject constructor(
     private val watchlistDao: WatchlistDao,
     private val searchCacheDao: SearchCacheDao,
+    private val movieDao: MovieDao,
+    private val seriesDao: SeriesDao,
     private val syncRepository: SyncRepository,
 ) : WatchlistRepository {
 
@@ -48,7 +52,8 @@ class WatchlistRepositoryImpl @Inject constructor(
             ContentFilter.SERIES -> watchlistDao.observeItemsByType(watchlistId, ContentType.SERIES)
         }.map { items ->
             items.mapNotNull { item ->
-                searchCacheDao.getByTvdbId(item.tvdbId)?.let { cached ->
+                val cached = searchCacheDao.getByTvdbId(item.tvdbId)
+                if (cached != null) {
                     ContentItem(
                         tvdbId      = cached.tvdbId,
                         title       = cached.title,
@@ -57,6 +62,27 @@ class WatchlistRepositoryImpl @Inject constructor(
                         posterUrl   = cached.posterUrl,
                         tvdbRating  = cached.tvdbRating
                     )
+                } else when (item.contentType) {
+                    ContentType.MOVIE  -> movieDao.getById(item.tvdbId)?.let { movie ->
+                        ContentItem(
+                            tvdbId      = item.tvdbId,
+                            title       = movie.title,
+                            contentType = ContentType.MOVIE,
+                            year        = movie.year,
+                            posterUrl   = movie.posterUrl,
+                            tvdbRating  = movie.tvdbRating
+                        )
+                    }
+                    ContentType.SERIES -> seriesDao.getById(item.tvdbId)?.let { series ->
+                        ContentItem(
+                            tvdbId      = item.tvdbId,
+                            title       = series.title,
+                            contentType = ContentType.SERIES,
+                            year        = series.firstAired?.take(4)?.toIntOrNull(),
+                            posterUrl   = series.posterUrl,
+                            tvdbRating  = series.tvdbRating
+                        )
+                    }
                 }
             }
         }.flowOn(Dispatchers.IO)

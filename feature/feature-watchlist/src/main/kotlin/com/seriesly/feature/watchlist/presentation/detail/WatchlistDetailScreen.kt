@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BookmarkRemove
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -190,9 +191,10 @@ fun WatchlistDetailScreen(
             } else {
                 items(currentItems, key = { "${it.tvdbId}-${it.contentType}" }) { item ->
                     CollectibleCard(
-                        item     = item,
-                        onClick  = { viewModel.onIntent(WatchlistDetailIntent.ItemClicked(item.tvdbId, item.contentType)) },
-                        onRemove = { viewModel.onIntent(WatchlistDetailIntent.RemoveItem(item.tvdbId, item.contentType)) }
+                        item           = item,
+                        onClick        = { viewModel.onIntent(WatchlistDetailIntent.ItemClicked(item.tvdbId, item.contentType)) },
+                        onRemove       = { viewModel.onIntent(WatchlistDetailIntent.RemoveItem(item.tvdbId, item.contentType)) },
+                        onMarkWatched  = { viewModel.onIntent(WatchlistDetailIntent.MarkMovieWatched(item.tvdbId)) }
                     )
                 }
             }
@@ -204,9 +206,10 @@ fun WatchlistDetailScreen(
 
 @Composable
 private fun CollectibleCard(
-    item:     ContentItem,
-    onClick:  () -> Unit,
-    onRemove: () -> Unit
+    item:          ContentItem,
+    onClick:       () -> Unit,
+    onRemove:      () -> Unit,
+    onMarkWatched: () -> Unit
 ) {
     val isMovie   = item.contentType == ContentType.MOVIE
     val accentBrush = if (isMovie) {
@@ -325,30 +328,59 @@ private fun CollectibleCard(
 
                     // Action buttons
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Secondary)
-                                .clickable(onClick = onClick)
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        if (isMovie && item.isWatched) {
+                            // Watched indicator — non-interactive, just shows status
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Primary.copy(alpha = 0.15f))
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector        = if (isMovie) Icons.Filled.VerifiedUser else Icons.Filled.PlayArrow,
-                                    contentDescription = null,
-                                    tint               = OnSecondaryContainer,
-                                    modifier           = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text  = if (isMovie) "MARK WATCHED" else "RESUME",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                                    color = OnSecondaryContainer
-                                )
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector        = Icons.Filled.CheckCircle,
+                                        contentDescription = null,
+                                        tint               = Primary,
+                                        modifier           = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text  = "WATCHED",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = Primary
+                                    )
+                                }
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Secondary)
+                                    .clickable(onClick = if (isMovie) onMarkWatched else onClick)
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector        = if (isMovie) Icons.Filled.VerifiedUser else Icons.Filled.PlayArrow,
+                                        contentDescription = null,
+                                        tint               = OnSecondaryContainer,
+                                        modifier           = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text  = if (isMovie) "MARK WATCHED" else "RESUME",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = OnSecondaryContainer
+                                    )
+                                }
                             }
                         }
                         Box(

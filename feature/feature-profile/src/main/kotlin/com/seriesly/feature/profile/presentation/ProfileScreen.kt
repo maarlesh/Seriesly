@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Star
@@ -44,6 +45,7 @@ import kotlinx.coroutines.delay
 fun ProfileScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToMyRatings: () -> Unit,
+    onNavigateToWatchHistory: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -51,8 +53,9 @@ fun ProfileScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                ProfileEvent.NavigateToLogin     -> onNavigateToLogin()
-                ProfileEvent.NavigateToMyRatings -> onNavigateToMyRatings()
+                ProfileEvent.NavigateToLogin        -> onNavigateToLogin()
+                ProfileEvent.NavigateToMyRatings    -> onNavigateToMyRatings()
+                ProfileEvent.NavigateToWatchHistory -> onNavigateToWatchHistory()
             }
         }
     }
@@ -221,20 +224,38 @@ fun ProfileScreen(
                         visible = launched,
                         enter   = slideInVertically(tween(300, delayMillis = 250)) { 20 } + fadeIn(tween(300, delayMillis = 250))
                     ) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        Column(
+                            modifier            = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            StatCard(
-                                label       = "Watchlists",
-                                targetCount = stats.totalWatchlists,
-                                modifier    = Modifier.weight(1f)
-                            )
-                            StatCard(
-                                label       = "Rated",
-                                targetCount = stats.totalRatings,
-                                modifier    = Modifier.weight(1f)
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                StatCard(
+                                    label       = "Movies",
+                                    targetCount = stats.moviesWatched,
+                                    modifier    = Modifier.weight(1f)
+                                )
+                                StatCard(
+                                    label       = "Series",
+                                    targetCount = stats.seriesTracked,
+                                    modifier    = Modifier.weight(1f)
+                                )
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                StatCard(
+                                    label       = "Watchlists",
+                                    targetCount = stats.totalWatchlists,
+                                    modifier    = Modifier.weight(1f)
+                                )
+                                StatCard(
+                                    label       = "Rated",
+                                    targetCount = stats.totalRatings,
+                                    modifier    = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
@@ -266,6 +287,41 @@ fun ProfileScreen(
                                 Icon(Icons.Outlined.Star, contentDescription = null, tint = Tertiary)
                                 Text(
                                     text  = "My Ratings",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = OnSurface
+                                )
+                            }
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = Outline)
+                        }
+                    }
+                }
+            }
+
+            // ── Watch History row ─────────────────────────────────────────
+            item {
+                Column {
+                    AnimatedVisibility(
+                        visible = launched,
+                        enter   = slideInVertically(tween(300, delayMillis = 335)) { 20 } + fadeIn(tween(300, delayMillis = 335))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SurfaceContainerLow)
+                                .clickable { viewModel.onIntent(ProfileIntent.WatchHistoryClicked) }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Outlined.History, contentDescription = null, tint = Secondary)
+                                Text(
+                                    text  = "Watch History",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = OnSurface
                                 )

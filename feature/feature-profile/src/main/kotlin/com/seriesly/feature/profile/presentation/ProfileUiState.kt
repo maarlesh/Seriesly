@@ -14,9 +14,11 @@ sealed interface ProfileIntent {
     object LogoutConfirmed : ProfileIntent
     object LogoutDismissed : ProfileIntent
     object MyRatingsClicked : ProfileIntent
+    object WatchHistoryClicked : ProfileIntent
 }
 
 sealed interface ProfileEvent {
     object NavigateToLogin : ProfileEvent
     object NavigateToMyRatings : ProfileEvent
+    object NavigateToWatchHistory : ProfileEvent
 }

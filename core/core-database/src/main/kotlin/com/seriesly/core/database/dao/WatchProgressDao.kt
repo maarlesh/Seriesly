@@ -5,6 +5,12 @@ import com.seriesly.core.common.model.ContentType
 import com.seriesly.core.database.entity.WatchProgressEntity
 import kotlinx.coroutines.flow.Flow
 
+data class WatchHistoryRaw(
+    @ColumnInfo(name = "tvdbId") val tvdbId: Int,
+    @ColumnInfo(name = "contentType") val contentType: ContentType,
+    @ColumnInfo(name = "watchedAt") val watchedAt: Long
+)
+
 data class RecentWatchEntry(
     @ColumnInfo(name = "tvdbId") val tvdbId: Int,
     @ColumnInfo(name = "contentType") val contentType: ContentType,
@@ -76,6 +82,38 @@ interface WatchProgressDao {
         LIMIT :limit
     """)
     fun getInProgressSeries(userId: Long, limit: Int): Flow<List<InProgressSeriesEntry>>
+
+    @Query("""
+        SELECT tvdbId, contentType, MAX(watchedAt) as watchedAt
+        FROM watch_progress
+        WHERE userId = :userId AND watched = 1 AND watchedAt IS NOT NULL
+          AND (
+            (contentType = 'MOVIE' AND episodeId IS NULL)
+            OR (contentType = 'SERIES' AND episodeId IS NOT NULL)
+          )
+        GROUP BY tvdbId, contentType
+        ORDER BY MAX(watchedAt) DESC
+        LIMIT :limit
+    """)
+    fun getWatchHistory(userId: Long, limit: Int = 200): Flow<List<WatchHistoryRaw>>
+
+    @Query("""
+        SELECT DISTINCT tvdbId FROM watch_progress
+        WHERE userId = :userId AND watched = 1 AND contentType = 'MOVIE' AND episodeId IS NULL
+    """)
+    fun observeWatchedMovieTvdbIds(userId: Long): Flow<List<Int>>
+
+    @Query("""
+        SELECT COUNT(DISTINCT tvdbId) FROM watch_progress
+        WHERE userId = :userId AND watched = 1 AND contentType = 'MOVIE' AND episodeId IS NULL
+    """)
+    fun observeMoviesWatchedCount(userId: Long): Flow<Int>
+
+    @Query("""
+        SELECT COUNT(DISTINCT tvdbId) FROM watch_progress
+        WHERE userId = :userId AND watched = 1 AND contentType = 'SERIES' AND episodeId IS NOT NULL
+    """)
+    fun observeSeriesTrackedCount(userId: Long): Flow<Int>
 
     @Query("SELECT * FROM watch_progress WHERE userId = :userId AND tvdbId = :tvdbId")
     suspend fun getProgressByContent(userId: Long, tvdbId: Int): List<WatchProgressEntity>

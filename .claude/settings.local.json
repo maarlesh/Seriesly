@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git update-ref:*)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}

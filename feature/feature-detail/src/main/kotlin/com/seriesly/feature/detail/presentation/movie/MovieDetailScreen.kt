@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import com.seriesly.core.ui.component.AddToWatchlistSheet
 import com.seriesly.core.ui.component.ErrorState
 import com.seriesly.core.ui.component.HeroSkeleton
+import com.seriesly.core.ui.component.ParticleBurstOverlay
 import com.seriesly.core.ui.component.RatingBottomSheet
 import com.seriesly.core.ui.theme.*
 import com.seriesly.core.ui.tokens.Brushes
@@ -303,6 +304,10 @@ fun MovieDetailScreen(
             // spacer to balance layout
             Box(Modifier.size(48.dp))
         }
+    }
+
+    if (uiState.showWatchedCelebration) {
+        ParticleBurstOverlay(onComplete = { viewModel.onIntent(MovieDetailIntent.DismissWatchedCelebration) })
     }
 
     if (uiState.showWatchlistSheet) {

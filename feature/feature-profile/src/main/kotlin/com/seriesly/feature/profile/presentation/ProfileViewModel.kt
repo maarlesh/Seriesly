@@ -40,10 +40,11 @@ class ProfileViewModel @Inject constructor(
     }
 
     override fun onIntent(intent: ProfileIntent) = when (intent) {
-        ProfileIntent.LogoutClicked    -> setState { copy(showLogoutDialog = true) }
-        ProfileIntent.LogoutDismissed  -> setState { copy(showLogoutDialog = false) }
-        ProfileIntent.LogoutConfirmed  -> logout()
-        ProfileIntent.MyRatingsClicked -> sendEvent(ProfileEvent.NavigateToMyRatings)
+        ProfileIntent.LogoutClicked       -> setState { copy(showLogoutDialog = true) }
+        ProfileIntent.LogoutDismissed     -> setState { copy(showLogoutDialog = false) }
+        ProfileIntent.LogoutConfirmed     -> logout()
+        ProfileIntent.MyRatingsClicked    -> sendEvent(ProfileEvent.NavigateToMyRatings)
+        ProfileIntent.WatchHistoryClicked -> sendEvent(ProfileEvent.NavigateToWatchHistory)
     }
 
     private fun logout() {

@@ -3,8 +3,10 @@ package com.seriesly.feature.progress.data
 import com.seriesly.core.common.model.ContentType
 import com.seriesly.core.common.result.AppException
 import com.seriesly.core.common.result.Result
+import com.seriesly.core.database.dao.MovieDao
 import com.seriesly.core.database.dao.RatingDao
 import com.seriesly.core.database.dao.SearchCacheDao
+import com.seriesly.core.database.dao.SeriesDao
 import com.seriesly.core.database.dao.WatchProgressDao
 import com.seriesly.core.database.dao.InProgressSeriesEntry
 import com.seriesly.core.database.entity.RatingEntity
@@ -12,6 +14,7 @@ import com.seriesly.core.database.entity.WatchProgressEntity
 import com.seriesly.core.domain.model.ContentItem
 import com.seriesly.core.domain.model.RatedItem
 import com.seriesly.core.domain.model.UserRating
+import com.seriesly.core.domain.model.WatchHistoryEntry
 import com.seriesly.core.domain.repository.ProgressRepository
 import com.seriesly.core.domain.repository.SyncRepository
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +30,8 @@ class ProgressRepositoryImpl @Inject constructor(
     private val watchProgressDao: WatchProgressDao,
     private val ratingDao: RatingDao,
     private val searchCacheDao: SearchCacheDao,
+    private val movieDao: MovieDao,
+    private val seriesDao: SeriesDao,
     private val syncRepository: SyncRepository,
 ) : ProgressRepository {
 
@@ -88,6 +93,46 @@ class ProgressRepositoryImpl @Inject constructor(
                         posterUrl   = cached.posterUrl,
                         tvdbRating  = cached.tvdbRating,
                         isWatched   = false
+                    )
+                }
+            }
+            .flowOn(Dispatchers.IO)
+
+    override fun observeWatchedMovieTvdbIds(userId: Long): Flow<Set<Int>> =
+        watchProgressDao.observeWatchedMovieTvdbIds(userId)
+            .map { it.toSet() }
+            .flowOn(Dispatchers.IO)
+
+    override fun observeWatchHistory(userId: Long, limit: Int): Flow<List<WatchHistoryEntry>> =
+        watchProgressDao.getWatchHistory(userId, limit)
+            .map { entries ->
+                entries.mapNotNull { entry ->
+                    val title: String
+                    val posterUrl: String?
+                    val cached = searchCacheDao.getByTvdbId(entry.tvdbId)
+                    if (cached != null) {
+                        title     = cached.title
+                        posterUrl = cached.posterUrl
+                    } else when (entry.contentType) {
+                        ContentType.MOVIE  -> {
+                            val movie = movieDao.getById(entry.tvdbId) ?: return@mapNotNull null
+                            title     = movie.title
+                            posterUrl = movie.posterUrl
+                        }
+                        ContentType.SERIES -> {
+                            val series = seriesDao.getById(entry.tvdbId) ?: return@mapNotNull null
+                            title     = series.title
+                            posterUrl = series.posterUrl
+                        }
+                    }
+                    val rating = ratingDao.getRating(userId, entry.tvdbId, entry.contentType)?.rating
+                    WatchHistoryEntry(
+                        tvdbId      = entry.tvdbId,
+                        contentType = entry.contentType,
+                        title       = title,
+                        posterUrl   = posterUrl,
+                        watchedAt   = entry.watchedAt,
+                        rating      = rating
                     )
                 }
             }

@@ -15,11 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,7 +52,7 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem("search",    "Home",      Icons.Outlined.Movie,     Icons.Filled.Movie),
     BottomNavItem("watchlist", "Watchlist", Icons.Outlined.Bookmarks, Icons.Filled.Bookmarks),
-    BottomNavItem("progress",  "Search",    Icons.Outlined.Search,    Icons.Filled.Search),
+    BottomNavItem("progress",  "Ratings",   Icons.Outlined.StarOutline, Icons.Filled.Star),
     BottomNavItem("profile",   "Profile",   Icons.Outlined.Person,    Icons.Filled.Person),
 )
 
@@ -119,6 +119,7 @@ fun HomeNavHost(onLoggedOut: () -> Unit = {}) {
                             homeNavController.navigate(item.route) {
                                 popUpTo(homeNavController.graph.findStartDestination().id) {
                                     saveState = true
+                                    inclusive = true
                                 }
                                 launchSingleTop = true
                                 restoreState    = true

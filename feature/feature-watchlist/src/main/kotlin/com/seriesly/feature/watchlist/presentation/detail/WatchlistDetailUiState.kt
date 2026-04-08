@@ -17,6 +17,7 @@ sealed interface WatchlistDetailIntent {
     data class TabSelected(val filter: ContentFilter) : WatchlistDetailIntent
     data class RemoveItem(val tvdbId: Int, val type: ContentType) : WatchlistDetailIntent
     data class ItemClicked(val tvdbId: Int, val type: ContentType) : WatchlistDetailIntent
+    data class MarkMovieWatched(val tvdbId: Int) : WatchlistDetailIntent
 }
 
 sealed interface WatchlistDetailEvent {

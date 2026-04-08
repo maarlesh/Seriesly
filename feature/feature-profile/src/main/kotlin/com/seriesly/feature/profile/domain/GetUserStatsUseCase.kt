@@ -5,6 +5,7 @@ import com.seriesly.core.common.result.Result
 import com.seriesly.core.database.dao.RatingDao
 import com.seriesly.core.database.dao.UserDao
 import com.seriesly.core.database.dao.WatchlistDao
+import com.seriesly.core.database.dao.WatchProgressDao
 import com.seriesly.core.security.session.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -25,6 +26,7 @@ class GetUserStatsUseCase @Inject constructor(
     private val userDao: UserDao,
     private val ratingDao: RatingDao,
     private val watchlistDao: WatchlistDao,
+    private val watchProgressDao: WatchProgressDao,
     private val sessionManager: SessionManager
 ) {
     operator fun invoke(): Flow<Result<UserStats>> = flow {
@@ -35,13 +37,15 @@ class GetUserStatsUseCase @Inject constructor(
         emitAll(
             combine(
                 watchlistDao.observeCountForUser(userId),
-                ratingDao.observeRatingCount(userId)
-            ) { watchlistCount, ratingCount ->
+                ratingDao.observeRatingCount(userId),
+                watchProgressDao.observeMoviesWatchedCount(userId),
+                watchProgressDao.observeSeriesTrackedCount(userId)
+            ) { watchlistCount, ratingCount, moviesWatched, seriesTracked ->
                 Result.Success(
                     UserStats(
                         username        = user.username,
-                        moviesWatched   = 0,
-                        seriesTracked   = 0,
+                        moviesWatched   = moviesWatched,
+                        seriesTracked   = seriesTracked,
                         totalRatings    = ratingCount,
                         totalWatchlists = watchlistCount,
                         memberSince     = user.createdAt

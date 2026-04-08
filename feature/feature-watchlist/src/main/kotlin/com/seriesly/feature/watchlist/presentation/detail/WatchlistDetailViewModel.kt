@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.seriesly.core.common.base.BaseViewModel
 import com.seriesly.core.domain.model.ContentFilter
+import com.seriesly.core.domain.repository.ProgressRepository
 import com.seriesly.core.domain.repository.WatchlistRepository
 import com.seriesly.core.security.session.SessionManager
 import com.seriesly.feature.watchlist.domain.usecase.RemoveFromWatchlistUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,6 +18,7 @@ class WatchlistDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val sessionManager: SessionManager,
     private val watchlistRepository: WatchlistRepository,
+    private val progressRepository: ProgressRepository,
     private val removeFromWatchlist: RemoveFromWatchlistUseCase
 ) : BaseViewModel<WatchlistDetailUiState, WatchlistDetailIntent, WatchlistDetailEvent>(WatchlistDetailUiState()) {
 
@@ -30,7 +33,12 @@ class WatchlistDetailViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            watchlistRepository.observeItemsAsContent(watchlistId, ContentFilter.MOVIES).collect { items ->
+            combine(
+                watchlistRepository.observeItemsAsContent(watchlistId, ContentFilter.MOVIES),
+                progressRepository.observeWatchedMovieTvdbIds(userId)
+            ) { items, watchedIds ->
+                items.map { it.copy(isWatched = it.tvdbId in watchedIds) }
+            }.collect { items ->
                 setState { copy(movies = items, isLoading = false) }
             }
         }
@@ -42,10 +50,13 @@ class WatchlistDetailViewModel @Inject constructor(
     }
 
     override fun onIntent(intent: WatchlistDetailIntent) { when (intent) {
-        is WatchlistDetailIntent.TabSelected  -> setState { copy(selectedTab = intent.filter) }
-        is WatchlistDetailIntent.RemoveItem   -> viewModelScope.launch {
+        is WatchlistDetailIntent.TabSelected     -> setState { copy(selectedTab = intent.filter) }
+        is WatchlistDetailIntent.RemoveItem      -> viewModelScope.launch {
             removeFromWatchlist(watchlistId, intent.tvdbId, intent.type)
         }
-        is WatchlistDetailIntent.ItemClicked  -> sendEvent(WatchlistDetailEvent.NavigateToDetail(intent.tvdbId, intent.type))
+        is WatchlistDetailIntent.ItemClicked     -> sendEvent(WatchlistDetailEvent.NavigateToDetail(intent.tvdbId, intent.type))
+        is WatchlistDetailIntent.MarkMovieWatched -> viewModelScope.launch {
+            progressRepository.markMovieWatched(userId, intent.tvdbId, watched = true)
+        }
     } }
 }

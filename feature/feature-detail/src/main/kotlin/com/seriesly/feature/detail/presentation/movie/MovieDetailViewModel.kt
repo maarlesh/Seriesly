@@ -12,6 +12,7 @@ import com.seriesly.core.domain.repository.WatchlistRepository
 import com.seriesly.core.security.session.SessionManager
 import com.seriesly.feature.detail.domain.usecase.GetMovieDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +28,7 @@ class MovieDetailViewModel @Inject constructor(
 
     private val tvdbId: Int = savedStateHandle.get<Int>("tvdbId") ?: -1
     private val userId = sessionManager.getCurrentUserId()
+    private var initialWatchedObserved = false
 
     init {
         viewModelScope.launch { loadMovie() }
@@ -47,7 +49,20 @@ class MovieDetailViewModel @Inject constructor(
 
     private suspend fun observeWatched() {
         progressRepository.observeMovieWatched(userId, tvdbId).collect { watched ->
+            if (!initialWatchedObserved) {
+                initialWatchedObserved = true
+                setState { copy(isWatched = watched) }
+                return@collect
+            }
+            val wasWatched = uiState.value.isWatched
             setState { copy(isWatched = watched) }
+            if (watched && !wasWatched) {
+                setState { copy(showWatchedCelebration = true) }
+                if (uiState.value.userRating == null) {
+                    delay(800)
+                    setState { copy(showRatingSheet = true) }
+                }
+            }
         }
     }
 
@@ -73,6 +88,7 @@ class MovieDetailViewModel @Inject constructor(
             MovieDetailIntent.ShowRatingSheet        -> setState { copy(showRatingSheet = true) }
             MovieDetailIntent.DismissRatingSheet     -> setState { copy(showRatingSheet = false) }
             is MovieDetailIntent.SaveRating          -> saveRating(intent.rating, intent.comment)
+            MovieDetailIntent.DismissWatchedCelebration -> setState { copy(showWatchedCelebration = false) }
         }
     }
 

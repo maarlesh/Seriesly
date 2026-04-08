@@ -13,8 +13,9 @@ fun NavGraphBuilder.profileNavGraph(
     navigation(startDestination = "profile_home", route = "profile") {
         composable("profile_home") {
             ProfileScreen(
-                onNavigateToLogin     = onLoggedOut,
-                onNavigateToMyRatings = { navController.navigate("progress") }
+                onNavigateToLogin        = onLoggedOut,
+                onNavigateToMyRatings    = { navController.navigate("progress") },
+                onNavigateToWatchHistory = { navController.navigate("history") }
             )
         }
     }
