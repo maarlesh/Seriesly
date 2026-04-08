@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -116,13 +115,16 @@ fun HomeNavHost(onLoggedOut: () -> Unit = {}) {
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
-                            homeNavController.navigate(item.route) {
-                                popUpTo(homeNavController.graph.findStartDestination().id) {
-                                    saveState = true
-                                    inclusive = true
+                            if (item.route == "search") {
+                                homeNavController.popBackStack("search", inclusive = false)
+                            } else {
+                                homeNavController.navigate(item.route) {
+                                    popUpTo("search") {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState    = true
                                 }
-                                launchSingleTop = true
-                                restoreState    = true
                             }
                         }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
