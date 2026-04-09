@@ -66,6 +66,9 @@ class FirestoreSyncRepository @Inject constructor(
                         "watchlistId" to item.watchlistId,
                         "addedAt" to item.addedAt,
                         "updatedAt" to item.updatedAt,
+                        "title" to item.title,
+                        "posterUrl" to item.posterUrl,
+                        "year" to item.year,
                         "deleted" to false,
                     )
                 )
@@ -268,6 +271,9 @@ class FirestoreSyncRepository @Inject constructor(
                         contentType = contentType,
                         addedAt     = doc.getLong("addedAt") ?: remoteUpdatedAt,
                         updatedAt   = remoteUpdatedAt,
+                        title       = doc.getString("title") ?: local?.title ?: "",
+                        posterUrl   = doc.getString("posterUrl") ?: local?.posterUrl,
+                        year        = doc.getLong("year")?.toInt() ?: local?.year,
                         pendingSync = false,
                         syncedAt    = now
                     )

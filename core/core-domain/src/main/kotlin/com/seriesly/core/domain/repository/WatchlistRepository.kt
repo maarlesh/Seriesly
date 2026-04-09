@@ -15,7 +15,7 @@ interface WatchlistRepository {
     suspend fun create(userId: Long, name: String): Result<Long>
     suspend fun rename(watchlistId: Long, name: String, userId: Long): Result<Unit>
     suspend fun delete(watchlistId: Long): Result<Unit>
-    suspend fun addItem(watchlistId: Long, tvdbId: Int, type: ContentType): Result<Unit>
+    suspend fun addItem(watchlistId: Long, tvdbId: Int, type: ContentType, title: String, posterUrl: String?, year: Int?): Result<Unit>
     suspend fun removeItem(watchlistId: Long, tvdbId: Int, type: ContentType): Result<Unit>
     suspend fun reorder(orderedIds: List<Long>): Result<Unit>
     suspend fun getWatchlistsContaining(userId: Long, tvdbId: Int, type: ContentType): List<Long>

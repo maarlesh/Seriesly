@@ -63,25 +63,51 @@ class WatchlistRepositoryImpl @Inject constructor(
                         tvdbRating  = cached.tvdbRating
                     )
                 } else when (item.contentType) {
-                    ContentType.MOVIE  -> movieDao.getById(item.tvdbId)?.let { movie ->
-                        ContentItem(
-                            tvdbId      = item.tvdbId,
-                            title       = movie.title,
-                            contentType = ContentType.MOVIE,
-                            year        = movie.year,
-                            posterUrl   = movie.posterUrl,
-                            tvdbRating  = movie.tvdbRating
-                        )
+                    ContentType.MOVIE  -> {
+                        val movie = movieDao.getById(item.tvdbId)
+                        if (movie != null) {
+                            ContentItem(
+                                tvdbId      = item.tvdbId,
+                                title       = movie.title,
+                                contentType = ContentType.MOVIE,
+                                year        = movie.year,
+                                posterUrl   = movie.posterUrl,
+                                tvdbRating  = movie.tvdbRating
+                            )
+                        } else if (item.title.isNotEmpty()) {
+                            // Synced from Firestore on fresh install — use stored metadata
+                            ContentItem(
+                                tvdbId      = item.tvdbId,
+                                title       = item.title,
+                                contentType = ContentType.MOVIE,
+                                year        = item.year,
+                                posterUrl   = item.posterUrl,
+                                tvdbRating  = null
+                            )
+                        } else null
                     }
-                    ContentType.SERIES -> seriesDao.getById(item.tvdbId)?.let { series ->
-                        ContentItem(
-                            tvdbId      = item.tvdbId,
-                            title       = series.title,
-                            contentType = ContentType.SERIES,
-                            year        = series.firstAired?.take(4)?.toIntOrNull(),
-                            posterUrl   = series.posterUrl,
-                            tvdbRating  = series.tvdbRating
-                        )
+                    ContentType.SERIES -> {
+                        val series = seriesDao.getById(item.tvdbId)
+                        if (series != null) {
+                            ContentItem(
+                                tvdbId      = item.tvdbId,
+                                title       = series.title,
+                                contentType = ContentType.SERIES,
+                                year        = series.firstAired?.take(4)?.toIntOrNull(),
+                                posterUrl   = series.posterUrl,
+                                tvdbRating  = series.tvdbRating
+                            )
+                        } else if (item.title.isNotEmpty()) {
+                            // Synced from Firestore on fresh install — use stored metadata
+                            ContentItem(
+                                tvdbId      = item.tvdbId,
+                                title       = item.title,
+                                contentType = ContentType.SERIES,
+                                year        = item.year,
+                                posterUrl   = item.posterUrl,
+                                tvdbRating  = null
+                            )
+                        } else null
                     }
                 }
             }
@@ -129,11 +155,19 @@ class WatchlistRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun addItem(watchlistId: Long, tvdbId: Int, type: ContentType): Result<Unit> =
+    override suspend fun addItem(watchlistId: Long, tvdbId: Int, type: ContentType, title: String, posterUrl: String?, year: Int?): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
                 val inserted = watchlistDao.insertItem(
-                    WatchlistItemEntity(watchlistId = watchlistId, tvdbId = tvdbId, contentType = type, addedAt = System.currentTimeMillis())
+                    WatchlistItemEntity(
+                        watchlistId = watchlistId,
+                        tvdbId      = tvdbId,
+                        contentType = type,
+                        addedAt     = System.currentTimeMillis(),
+                        title       = title,
+                        posterUrl   = posterUrl,
+                        year        = year
+                    )
                 )
                 if (inserted == -1L) return@withContext Result.Error(AppException.ValidationException("Already in this watchlist"))
                 runCatching { syncRepository.pushPendingWatchlists() }

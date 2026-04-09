@@ -119,8 +119,13 @@ class SeriesDetailViewModel @Inject constructor(
     }
 
     private fun toggleWatchlist(watchlistId: Long, add: Boolean) = viewModelScope.launch {
-        if (add) watchlistRepository.addItem(watchlistId, tvdbId, ContentType.SERIES)
-        else     watchlistRepository.removeItem(watchlistId, tvdbId, ContentType.SERIES)
+        if (add) {
+            val series = uiState.value.series
+            val year = series?.firstAired?.take(4)?.toIntOrNull()
+            watchlistRepository.addItem(watchlistId, tvdbId, ContentType.SERIES, series?.title ?: "", series?.posterUrl, year)
+        } else {
+            watchlistRepository.removeItem(watchlistId, tvdbId, ContentType.SERIES)
+        }
         val inIds = watchlistRepository.getWatchlistsContaining(userId, tvdbId, ContentType.SERIES).toSet()
         setState { copy(inWatchlistIds = inIds) }
     }

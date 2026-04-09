@@ -97,8 +97,12 @@ class MovieDetailViewModel @Inject constructor(
     }
 
     private fun toggleWatchlist(watchlistId: Long, add: Boolean) = viewModelScope.launch {
-        if (add) watchlistRepository.addItem(watchlistId, tvdbId, ContentType.MOVIE)
-        else     watchlistRepository.removeItem(watchlistId, tvdbId, ContentType.MOVIE)
+        if (add) {
+            val movie = uiState.value.movie
+            watchlistRepository.addItem(watchlistId, tvdbId, ContentType.MOVIE, movie?.title ?: "", movie?.posterUrl, movie?.year)
+        } else {
+            watchlistRepository.removeItem(watchlistId, tvdbId, ContentType.MOVIE)
+        }
         val inIds = watchlistRepository.getWatchlistsContaining(userId, tvdbId, ContentType.MOVIE).toSet()
         setState { copy(inWatchlistIds = inIds) }
     }

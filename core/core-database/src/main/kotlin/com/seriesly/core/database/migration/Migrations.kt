@@ -31,7 +31,17 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Store display metadata on watchlist items so they survive reinstall (same fix as ratings)
+        db.execSQL("ALTER TABLE watchlist_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE watchlist_items ADD COLUMN posterUrl TEXT")
+        db.execSQL("ALTER TABLE watchlist_items ADD COLUMN year INTEGER")
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2,
-    MIGRATION_2_3
+    MIGRATION_2_3,
+    MIGRATION_3_4
 )

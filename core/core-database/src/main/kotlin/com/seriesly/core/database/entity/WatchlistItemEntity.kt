@@ -29,5 +29,8 @@ data class WatchlistItemEntity(
     val addedAt: Long,
     val updatedAt: Long = System.currentTimeMillis(),
     val pendingSync: Boolean = true,
-    val syncedAt: Long = 0L
+    val syncedAt: Long = 0L,
+    val title: String = "",
+    val posterUrl: String? = null,
+    val year: Int? = null
 )
