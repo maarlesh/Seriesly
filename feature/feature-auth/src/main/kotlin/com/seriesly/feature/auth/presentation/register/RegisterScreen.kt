@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,8 +28,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -131,6 +135,9 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            val passwordFocus = remember { FocusRequester() }
+            val confirmFocus  = remember { FocusRequester() }
+
             // Glass panel card
             Column(
                 modifier = Modifier
@@ -150,24 +157,29 @@ fun RegisterScreen(
                 )
 
                 RegisterField(
-                    label         = "USERNAME",
-                    value         = uiState.username,
-                    onValueChange = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
-                    errorText     = uiState.usernameError,
-                    leadingIcon   = {
+                    label          = "USERNAME",
+                    value          = uiState.username,
+                    onValueChange  = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
+                    errorText      = uiState.usernameError,
+                    imeAction      = ImeAction.Next,
+                    onImeAction    = { passwordFocus.requestFocus() },
+                    leadingIcon    = {
                         Icon(Icons.Outlined.Person, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                 )
 
                 RegisterField(
-                    label               = "PASSWORD",
-                    value               = uiState.password,
-                    onValueChange       = { viewModel.onIntent(RegisterIntent.PasswordChanged(it)) },
-                    errorText           = uiState.passwordError,
+                    label                = "PASSWORD",
+                    value                = uiState.password,
+                    onValueChange        = { viewModel.onIntent(RegisterIntent.PasswordChanged(it)) },
+                    errorText            = uiState.passwordError,
                     visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
-                                         else PasswordVisualTransformation(),
-                    keyboardType        = KeyboardType.Password,
+                                          else PasswordVisualTransformation(),
+                    keyboardType         = KeyboardType.Password,
+                    focusRequester       = passwordFocus,
+                    imeAction            = ImeAction.Next,
+                    onImeAction          = { confirmFocus.requestFocus() },
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -189,13 +201,15 @@ fun RegisterScreen(
                 )
 
                 RegisterField(
-                    label               = "CONFIRM PASSWORD",
-                    value               = uiState.confirmPassword,
-                    onValueChange       = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
-                    errorText           = uiState.confirmError,
+                    label                = "CONFIRM PASSWORD",
+                    value                = uiState.confirmPassword,
+                    onValueChange        = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
+                    errorText            = uiState.confirmError,
                     visualTransformation = if (uiState.confirmVisible) VisualTransformation.None
-                                         else PasswordVisualTransformation(),
-                    keyboardType        = KeyboardType.Password,
+                                          else PasswordVisualTransformation(),
+                    keyboardType         = KeyboardType.Password,
+                    focusRequester       = confirmFocus,
+                    imeAction            = ImeAction.Done,
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -263,7 +277,10 @@ private fun RegisterField(
     leadingIcon:          @Composable (() -> Unit)? = null,
     trailingIcon:         @Composable (() -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardType:         KeyboardType = KeyboardType.Text
+    keyboardType:         KeyboardType = KeyboardType.Text,
+    focusRequester:       FocusRequester? = null,
+    imeAction:            ImeAction = ImeAction.Next,
+    onImeAction:          (() -> Unit)? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -287,10 +304,16 @@ private fun RegisterField(
                 onValueChange        = onValueChange,
                 singleLine           = true,
                 visualTransformation = visualTransformation,
-                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType),
+                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+                keyboardActions      = KeyboardActions(
+                    onNext = { onImeAction?.invoke() },
+                    onDone = { onImeAction?.invoke() }
+                ),
                 textStyle            = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
                 cursorBrush          = SolidColor(Primary),
-                modifier             = Modifier.weight(1f)
+                modifier             = Modifier
+                    .weight(1f)
+                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             ) { innerField ->
                 if (value.isEmpty()) {
                     Text(

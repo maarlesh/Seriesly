@@ -129,7 +129,7 @@ interface WatchProgressDao {
         updatedAt = :updatedAt, pendingSync = 1
         WHERE userId = :userId AND tvdbId = :tvdbId AND contentType = 'MOVIE' AND episodeId IS NULL
     """)
-    suspend fun updateMovieWatched(userId: Long, tvdbId: Int, watched: Boolean, watchedAt: Long?, updatedAt: Long = System.currentTimeMillis())
+    suspend fun updateMovieWatched(userId: Long, tvdbId: Int, watched: Boolean, watchedAt: Long?, updatedAt: Long = System.currentTimeMillis()): Int
 
     @Query("SELECT * FROM watch_progress WHERE pendingSync = 1")
     suspend fun getUnsyncedProgress(): List<WatchProgressEntity>

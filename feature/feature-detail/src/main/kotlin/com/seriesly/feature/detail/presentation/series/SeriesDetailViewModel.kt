@@ -127,7 +127,7 @@ class SeriesDetailViewModel @Inject constructor(
             watchlistRepository.removeItem(watchlistId, tvdbId, ContentType.SERIES)
         }
         val inIds = watchlistRepository.getWatchlistsContaining(userId, tvdbId, ContentType.SERIES).toSet()
-        setState { copy(inWatchlistIds = inIds) }
+        setState { copy(inWatchlistIds = inIds, showWatchlistSheet = if (add) false else showWatchlistSheet) }
     }
 
     private fun saveRating(rating: Float, comment: String?) = viewModelScope.launch {

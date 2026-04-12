@@ -141,17 +141,25 @@ class ProgressRepositoryImpl @Inject constructor(
     override suspend fun markMovieWatched(userId: Long, tvdbId: Int, watched: Boolean): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                val now = if (watched) System.currentTimeMillis() else null
-                watchProgressDao.upsert(
-                    WatchProgressEntity(
-                        userId      = userId,
-                        tvdbId      = tvdbId,
-                        contentType = ContentType.MOVIE,
-                        episodeId   = null,
-                        watched     = watched,
-                        watchedAt   = now
+                val now       = System.currentTimeMillis()
+                val watchedAt = if (watched) now else null
+                // Use UPDATE first to avoid the SQLite NULL-uniqueness issue:
+                // upsert with episodeId=null inserts duplicate rows because
+                // SQLite treats NULL != NULL in unique indexes.
+                val updated = watchProgressDao.updateMovieWatched(userId, tvdbId, watched, watchedAt, now)
+                if (updated == 0) {
+                    // No row yet — first time watching this movie
+                    watchProgressDao.upsert(
+                        WatchProgressEntity(
+                            userId      = userId,
+                            tvdbId      = tvdbId,
+                            contentType = ContentType.MOVIE,
+                            episodeId   = null,
+                            watched     = watched,
+                            watchedAt   = watchedAt
+                        )
                     )
-                )
+                }
                 runCatching { syncRepository.pushPendingProgress() }
                 Result.Success(Unit)
             } catch (e: Exception) {
