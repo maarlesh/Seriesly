@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -24,12 +25,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +59,19 @@ fun SeriesDetailScreen(
     viewModel: SeriesDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollState = rememberLazyListState()
+
+    // Dynamic alpha for top bar based on scroll
+    val headerHeightPx = with(LocalDensity.current) { 400.dp.toPx() }
+    val toolbarAlpha by remember {
+        derivedStateOf {
+            val scrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+            val firstVisibleIndex = scrollState.firstVisibleItemIndex
+            
+            if (firstVisibleIndex > 0) 1f
+            else (scrollOffset / headerHeightPx).coerceIn(0f, 1f)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -87,6 +104,42 @@ fun SeriesDetailScreen(
             .fillMaxSize()
             .background(Background)
     ) {
+        val series = uiState.series
+        if (series != null) {
+            // Cinematic Fixed Background Image with Blur & Parallax
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val scrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+                        val firstVisibleIndex = scrollState.firstVisibleItemIndex
+                        translationY = if (firstVisibleIndex == 0) -scrollOffset * 0.4f else -headerHeightPx * 0.4f
+                    }
+                    .blur(radius = (toolbarAlpha * 25).dp) // Strong blur as user scrolls up
+            ) {
+                AsyncImage(
+                    model              = series.backdropUrl ?: series.posterUrl,
+                    contentDescription = null,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize()
+                )
+                // Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Transparent,
+                                    0.5f to Background.copy(alpha = 0.4f),
+                                    1.0f to Background.copy(alpha = 0.9f)
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
         when {
             uiState.isLoading && uiState.series == null -> {
                 HeroSkeleton(modifier = Modifier.fillMaxSize())
@@ -113,116 +166,99 @@ fun SeriesDetailScreen(
                 val progressPct   = if (totalCount > 0) (watchedCount * 100 / totalCount) else 0
 
                 LazyColumn(
+                    state          = scrollState,
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
-                    // ── Hero Section ──────────────────────────────────────────
+                    // ── Hero Spacer ──────────────────────────────────────────
                     item {
-                        Box(
+                        Spacer(Modifier.height(420.dp))
+                    }
+
+                    // ── Metadata Row ──────────────────────────────────────────
+                    item {
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(530.dp)
+                                .padding(horizontal = 20.dp)
+                                .padding(bottom = 24.dp),
+                            verticalAlignment     = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Backdrop image
-                            AsyncImage(
-                                model              = series.backdropUrl ?: series.posterUrl,
-                                contentDescription = null,
-                                contentScale       = ContentScale.Crop,
-                                modifier           = Modifier.fillMaxSize()
-                            )
-                            // Hero scrim
+                            // Poster card
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Brushes.HeroScrim)
-                            )
-
-                            // Poster + metadata row at the bottom
-                            Row(
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(horizontal = 20.dp, vertical = 0.dp)
-                                    .offset(y = 32.dp),   // float above the fold
-                                verticalAlignment     = Alignment.Bottom,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                // Poster card
-                                Box(
-                                    modifier = Modifier
-                                        .width(104.dp)
-                                        .aspectRatio(2f / 3f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(SurfaceContainerHighest)
-                                        .drawBehind {
-                                            // Soft shadow
-                                            drawRect(
-                                                Brush.verticalGradient(
-                                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                                                )
+                                    .width(104.dp)
+                                    .aspectRatio(2f / 3f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(SurfaceContainerHighest)
+                                    .drawBehind {
+                                        // Soft shadow
+                                        drawRect(
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
                                             )
-                                        }
-                                ) {
-                                    AsyncImage(
-                                        model              = series.posterUrl,
-                                        contentDescription = series.title,
-                                        contentScale       = ContentScale.Crop,
-                                        modifier           = Modifier.fillMaxSize()
-                                    )
-                                }
-
-                                // Metadata
-                                Column(
-                                    modifier = Modifier.padding(bottom = 4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    // Status badge
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(50))
-                                            .background(Secondary.copy(alpha = 0.10f))
-                                            // border drawn via clip + background combo above
-                                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text  = series.status.name.uppercase(),
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = Secondary
                                         )
                                     }
+                            ) {
+                                AsyncImage(
+                                    model              = series.posterUrl,
+                                    contentDescription = series.title,
+                                    contentScale       = ContentScale.Crop,
+                                    modifier           = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            // Metadata
+                            Column(
+                                modifier = Modifier.padding(bottom = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // Status badge
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Secondary.copy(alpha = 0.15f))
+                                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
                                     Text(
-                                        text     = series.title,
-                                        style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                        color    = OnSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
+                                        text  = series.status.name.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Secondary
                                     )
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment     = Alignment.CenterVertically
-                                    ) {
-                                        series.firstAired?.let { aired ->
+                                }
+                                Text(
+                                    text     = series.title,
+                                    style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color    = OnSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    series.firstAired?.let { aired ->
+                                        Text(
+                                            text  = "First Aired: ${aired.take(10)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = OnSurfaceVariant
+                                        )
+                                    }
+                                    series.tvdbRating?.let { rating ->
+                                        Row(
+                                            verticalAlignment     = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector        = Icons.Filled.CheckCircle,
+                                                contentDescription = null,
+                                                tint               = Tertiary,
+                                                modifier           = Modifier.size(14.dp)
+                                            )
                                             Text(
-                                                text  = "First Aired: ${aired.take(10)}",
+                                                text  = "%.1f".format(rating),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = OnSurfaceVariant
                                             )
-                                        }
-                                        series.tvdbRating?.let { rating ->
-                                            Row(
-                                                verticalAlignment     = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector        = Icons.Filled.CheckCircle,
-                                                    contentDescription = null,
-                                                    tint               = Tertiary,
-                                                    modifier           = Modifier.size(14.dp)
-                                                )
-                                                Text(
-                                                    text  = "%.1f".format(rating),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = OnSurfaceVariant
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -230,16 +266,13 @@ fun SeriesDetailScreen(
                         }
                     }
 
-                    // Extra space for floating poster overlap
-                    item { Spacer(Modifier.height(48.dp)) }
-
-                    // ── Progress & Action Card ────────────────────────────────
+                    // ── Progress & Action Card (Glass) ────────────────────────
                     item {
                         Column(
                             modifier = Modifier
                                 .padding(horizontal = 20.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceContainerLow)
+                                .background(SurfaceContainerLow.copy(alpha = 0.85f))
                                 .padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -319,7 +352,7 @@ fun SeriesDetailScreen(
                                     )
                                 },
                                 colors  = AssistChipDefaults.assistChipColors(
-                                    containerColor    = SurfaceContainerHigh,
+                                    containerColor    = SurfaceContainerHigh.copy(alpha = 0.6f),
                                     labelColor        = if (uiState.userRating != null) Tertiary else OnSurfaceVariant
                                 )
                             )
@@ -334,7 +367,7 @@ fun SeriesDetailScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Primary.copy(alpha = 0.15f))
+                                        .background(Primary.copy(alpha = 0.20f))
                                         .clickable { viewModel.onIntent(SeriesDetailIntent.ShowWatchlistSheet) }
                                         .padding(vertical = 14.dp),
                                     horizontalArrangement = Arrangement.Center,
@@ -360,7 +393,7 @@ fun SeriesDetailScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .background(Color.White.copy(alpha = 0.1f))
                                         .clickable { viewModel.onIntent(SeriesDetailIntent.MarkAllWatched) }
                                         .padding(vertical = 14.dp),
                                     horizontalArrangement = Arrangement.Center,
@@ -383,14 +416,14 @@ fun SeriesDetailScreen(
                         }
                     }
 
-                    // ── Genres & Overview ─────────────────────────────────────
+                    // ── Genres & Overview (Glass) ─────────────────────────────
                     item {
                         Column(
                             modifier = Modifier
                                 .padding(horizontal = 20.dp, vertical = 16.dp)
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceContainerLow)
+                                .background(SurfaceContainerLow.copy(alpha = 0.85f))
                                 .padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -451,7 +484,8 @@ fun SeriesDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopStart)
-                .background(Surface.copy(alpha = 0.40f))
+                .background(Surface.copy(alpha = toolbarAlpha))
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

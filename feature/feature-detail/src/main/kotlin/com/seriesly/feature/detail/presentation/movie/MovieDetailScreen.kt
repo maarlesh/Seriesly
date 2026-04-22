@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,18 +17,19 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +52,19 @@ fun MovieDetailScreen(
     viewModel: MovieDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollState = rememberLazyListState()
+    
+    // Dynamic alpha for top bar and blur based on scroll
+    val headerHeightPx = with(LocalDensity.current) { 400.dp.toPx() }
+    val toolbarAlpha by remember {
+        derivedStateOf {
+            val scrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+            val firstVisibleIndex = scrollState.firstVisibleItemIndex
+            
+            if (firstVisibleIndex > 0) 1f
+            else (scrollOffset / headerHeightPx).coerceIn(0f, 1f)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -64,6 +79,42 @@ fun MovieDetailScreen(
             .fillMaxSize()
             .background(Background)
     ) {
+        val movie = uiState.movie
+        if (movie != null) {
+            // Cinematic Fixed Background Image with Blur & Parallax
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val scrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+                        val firstVisibleIndex = scrollState.firstVisibleItemIndex
+                        translationY = if (firstVisibleIndex == 0) -scrollOffset * 0.4f else -headerHeightPx * 0.4f
+                    }
+                    .blur(radius = (toolbarAlpha * 25).dp) // Strong blur as user scrolls up
+            ) {
+                AsyncImage(
+                    model              = movie.backdropUrl ?: movie.posterUrl,
+                    contentDescription = null,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize()
+                )
+                // Gradient overlay to keep the bottom dark and text readable
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Transparent,
+                                    0.5f to Background.copy(alpha = 0.4f),
+                                    1.0f to Background.copy(alpha = 0.9f)
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
         when {
             uiState.isLoading && uiState.movie == null ->
                 HeroSkeleton(modifier = Modifier.fillMaxSize())
@@ -78,122 +129,105 @@ fun MovieDetailScreen(
             uiState.movie != null -> {
                 val movie = uiState.movie!!
 
-                LazyColumn(contentPadding = PaddingValues(bottom = 100.dp)) {
+                LazyColumn(
+                    state          = scrollState,
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
 
-                    // ── Hero ─────────────────────────────────────────────────
+                    // ── Hero Spacer (allows background to show) ──────────────
                     item {
-                        Box(
+                        Spacer(Modifier.height(420.dp))
+                    }
+
+                    // ── Metadata Row ─────────────────────────────────────────
+                    item {
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(530.dp)
+                                .padding(horizontal = 20.dp)
+                                .padding(bottom = 24.dp),
+                            verticalAlignment     = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Backdrop / poster image — fills to very top of screen
-                            AsyncImage(
-                                model              = movie.backdropUrl ?: movie.posterUrl,
-                                contentDescription = null,
-                                contentScale       = ContentScale.Crop,
-                                modifier           = Modifier.fillMaxSize()
-                            )
-                            // Hero scrim
+                            // Poster card
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Brushes.HeroScrim)
-                            )
-
-                            // Poster + metadata row floating at bottom of hero
-                            Row(
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(horizontal = 20.dp, vertical = 0.dp)
-                                    .offset(y = 32.dp),
-                                verticalAlignment     = Alignment.Bottom,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                // Poster card
-                                Box(
-                                    modifier = Modifier
-                                        .width(104.dp)
-                                        .aspectRatio(2f / 3f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(SurfaceContainerHighest)
-                                        .drawBehind {
-                                            drawRect(
-                                                Brush.verticalGradient(
-                                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                                                )
+                                    .width(104.dp)
+                                    .aspectRatio(2f / 3f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(SurfaceContainerHighest)
+                                    .drawBehind {
+                                        drawRect(
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
                                             )
-                                        }
-                                ) {
-                                    AsyncImage(
-                                        model              = movie.posterUrl,
-                                        contentDescription = movie.title,
-                                        contentScale       = ContentScale.Crop,
-                                        modifier           = Modifier.fillMaxSize()
-                                    )
-                                }
-
-                                // Metadata
-                                Column(
-                                    modifier = Modifier.padding(bottom = 4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    // Status badge
-                                    movie.status?.let { status ->
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(50))
-                                                .background(Primary.copy(alpha = 0.10f))
-                                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text  = status.uppercase(),
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = Primary
-                                            )
-                                        }
+                                        )
                                     }
-                                    Text(
-                                        text     = movie.title,
-                                        style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                        color    = OnSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment     = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model              = movie.posterUrl,
+                                    contentDescription = movie.title,
+                                    contentScale       = ContentScale.Crop,
+                                    modifier           = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            // Metadata
+                            Column(
+                                modifier = Modifier.padding(bottom = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // Status badge
+                                movie.status?.let { status ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(50))
+                                            .background(Primary.copy(alpha = 0.15f))
+                                            .padding(horizontal = 12.dp, vertical = 4.dp)
                                     ) {
-                                        movie.year?.let {
-                                            Text(
-                                                text  = "$it",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = OnSurfaceVariant
-                                            )
-                                        }
-                                        movie.runtimeMinutes?.let {
-                                            Text(
-                                                text  = "${it}m",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = OnSurfaceVariant
-                                            )
-                                        }
+                                        Text(
+                                            text  = status.uppercase(),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = Primary
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text     = movie.title,
+                                    style    = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color    = OnSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    movie.year?.let {
+                                        Text(
+                                            text  = "$it",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = OnSurfaceVariant
+                                        )
+                                    }
+                                    movie.runtimeMinutes?.let {
+                                        Text(
+                                            text  = "${it}m",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = OnSurfaceVariant
+                                        )
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Extra space for floating poster overlap
-                    item { Spacer(Modifier.height(48.dp)) }
-
-                    // ── Action Card ───────────────────────────────────────────
+                    // ── Action Card (Semi-transparent Glass) ─────────────────
                     item {
                         Column(
                             modifier = Modifier
                                 .padding(horizontal = 20.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceContainerLow)
+                                .background(SurfaceContainerLow.copy(alpha = 0.85f))
                                 .padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -215,7 +249,7 @@ fun MovieDetailScreen(
                                         )
                                     },
                                     colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = SurfaceContainerHigh,
+                                        containerColor = SurfaceContainerHigh.copy(alpha = 0.6f),
                                         labelColor     = if (uiState.userRating != null) Tertiary else OnSurfaceVariant
                                     )
                                 )
@@ -223,7 +257,7 @@ fun MovieDetailScreen(
                                 Row(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Primary.copy(alpha = 0.15f))
+                                        .background(Primary.copy(alpha = 0.20f))
                                         .clickable { viewModel.onIntent(MovieDetailIntent.ShowWatchlistSheet) }
                                         .padding(horizontal = 14.dp, vertical = 10.dp),
                                     horizontalArrangement = Arrangement.Center,
@@ -242,14 +276,14 @@ fun MovieDetailScreen(
                         }
                     }
 
-                    // ── Genres & Overview ─────────────────────────────────────
+                    // ── Genres & Overview (Semi-transparent Glass) ───────────
                     item {
                         Column(
                             modifier = Modifier
                                 .padding(horizontal = 20.dp, vertical = 16.dp)
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceContainerLow)
+                                .background(SurfaceContainerLow.copy(alpha = 0.85f))
                                 .padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -283,12 +317,13 @@ fun MovieDetailScreen(
             }
         }
 
-        // Glass top app bar (floating) — identical pattern to SeriesDetailScreen
+        // Glass top app bar (floating)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopStart)
-                .background(Surface.copy(alpha = 0.40f))
+                .background(Surface.copy(alpha = toolbarAlpha))
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -334,8 +369,8 @@ fun MovieDetailScreen(
 private fun WatchedChip(isWatched: Boolean, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     val bgColor by animateColorAsState(
-        targetValue   = if (isWatched) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.surfaceVariant,
+        targetValue   = if (isWatched) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
         animationSpec = tween(250),
         label         = "chipBg"
     )
