@@ -25,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -51,6 +53,7 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -95,6 +98,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -162,7 +166,7 @@ fun RegisterScreen(
                     onValueChange  = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
                     errorText      = uiState.usernameError,
                     imeAction      = ImeAction.Next,
-                    onImeAction    = { passwordFocus.requestFocus() },
+                    onImeAction    = { focusManager.moveFocus(FocusDirection.Down) },
                     leadingIcon    = {
                         Icon(Icons.Outlined.Person, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -179,7 +183,7 @@ fun RegisterScreen(
                     keyboardType         = KeyboardType.Password,
                     focusRequester       = passwordFocus,
                     imeAction            = ImeAction.Next,
-                    onImeAction          = { confirmFocus.requestFocus() },
+                    onImeAction          = { focusManager.moveFocus(FocusDirection.Down) },
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -210,6 +214,7 @@ fun RegisterScreen(
                     keyboardType         = KeyboardType.Password,
                     focusRequester       = confirmFocus,
                     imeAction            = ImeAction.Done,
+                    onImeAction          = { viewModel.onIntent(RegisterIntent.RegisterClicked) },
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))

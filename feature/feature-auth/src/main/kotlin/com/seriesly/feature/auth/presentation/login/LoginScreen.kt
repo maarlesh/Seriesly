@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,11 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -132,6 +136,8 @@ fun LoginScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            val passwordFocus = remember { FocusRequester() }
+
             // Glass panel card
             Column(
                 modifier = Modifier
@@ -154,6 +160,8 @@ fun LoginScreen(
                     label         = "USERNAME",
                     value         = uiState.username,
                     onValueChange = { viewModel.onIntent(LoginIntent.UsernameChanged(it)) },
+                    imeAction     = ImeAction.Next,
+                    onImeAction   = { passwordFocus.requestFocus() },
                     leadingIcon   = {
                         Icon(Icons.Outlined.Person, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -167,6 +175,9 @@ fun LoginScreen(
                     visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
                                          else PasswordVisualTransformation(),
                     keyboardType        = KeyboardType.Password,
+                    focusRequester      = passwordFocus,
+                    imeAction           = ImeAction.Done,
+                    onImeAction         = { viewModel.onIntent(LoginIntent.LoginClicked) },
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, null,
                             tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
@@ -233,7 +244,10 @@ private fun CinematicField(
     leadingIcon:          @Composable (() -> Unit)? = null,
     trailingIcon:         @Composable (() -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardType:         KeyboardType = KeyboardType.Text
+    keyboardType:         KeyboardType = KeyboardType.Text,
+    focusRequester:       FocusRequester? = null,
+    imeAction:            ImeAction = ImeAction.Default,
+    onImeAction:          (() -> Unit)? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -257,10 +271,16 @@ private fun CinematicField(
                 onValueChange        = onValueChange,
                 singleLine           = true,
                 visualTransformation = visualTransformation,
-                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType),
+                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+                keyboardActions      = KeyboardActions(
+                    onNext = { onImeAction?.invoke() },
+                    onDone = { onImeAction?.invoke() }
+                ),
                 textStyle            = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
                 cursorBrush          = SolidColor(Primary),
-                modifier             = Modifier.weight(1f)
+                modifier             = Modifier
+                    .weight(1f)
+                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             ) { innerField ->
                 if (value.isEmpty()) {
                     Text(
