@@ -2,11 +2,14 @@ package com.seriesly.feature.auth.presentation.register
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -28,6 +31,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -45,6 +49,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.seriesly.core.ui.theme.*
 import com.seriesly.core.ui.tokens.Brushes
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -54,6 +60,8 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -69,73 +77,34 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(Background)
     ) {
-        // Ambient glow — top-right primary blob
-        Box(
-            modifier = Modifier
-                .size(480.dp)
-                .offset(x = 100.dp, y = (-100).dp)
-                .align(Alignment.TopEnd)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(Primary.copy(alpha = 0.10f), Color.Transparent)
-                    )
-                )
-        )
-        // Ambient glow — bottom-left secondary blob
-        Box(
-            modifier = Modifier
-                .size(320.dp)
-                .offset(x = (-60).dp, y = 60.dp)
-                .align(Alignment.BottomStart)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(Secondary.copy(alpha = 0.05f), Color.Transparent)
-                    )
-                )
-        )
+        // Background Blobs
+        Box(modifier = Modifier.size(480.dp).offset(100.dp, (-100).dp).align(Alignment.TopEnd).background(Brush.radialGradient(listOf(Primary.copy(alpha = 0.1f), Color.Transparent))))
+        Box(modifier = Modifier.size(320.dp).offset((-60).dp, 60.dp).align(Alignment.BottomStart).background(Brush.radialGradient(listOf(Secondary.copy(alpha = 0.05f), Color.Transparent))))
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .imePadding()
+                .imePadding() // Placed here to shrink the actual viewport
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(48.dp))
+            // This spacer pushes content to the center when there's room,
+            // but disappears when the keyboard takes up space
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(32.dp))
 
             // Brand header
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Brushes.SoulGradient),
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Brushes.SoulGradient),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector        = Icons.Filled.Movie,
-                    contentDescription = null,
-                    tint               = OnPrimaryContainer,
-                    modifier           = Modifier.size(28.dp)
-                )
+                Icon(Icons.Filled.Movie, null, tint = OnPrimaryContainer, modifier = Modifier.size(28.dp))
             }
 
             Spacer(Modifier.height(16.dp))
 
-            Text(
-                text  = "Seriesly",
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontStyle  = FontStyle.Italic
-                ),
-                color = Primary
-            )
-            Text(
-                text  = "Enter the Cinematic Obsidian.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariant
-            )
+            Text(text = "Seriesly", style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold, fontStyle = FontStyle.Italic), color = Primary)
 
             Spacer(Modifier.height(32.dp))
 
@@ -151,242 +120,132 @@ fun RegisterScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Text(
-                    text       = "Create Account",
-                    style      = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color      = OnSurface,
-                    textAlign  = TextAlign.Center,
-                    modifier   = Modifier.fillMaxWidth()
+                Text("Create Account", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = OnSurface, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+
+                RegisterField(
+                    label = "USERNAME",
+                    value = uiState.username,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
+                    errorText = uiState.usernameError,
+                    imeAction = ImeAction.Next,
+                    onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
                 )
 
                 RegisterField(
-                    label          = "USERNAME",
-                    value          = uiState.username,
-                    onValueChange  = { viewModel.onIntent(RegisterIntent.UsernameChanged(it)) },
-                    errorText      = uiState.usernameError,
-                    imeAction      = ImeAction.Next,
-                    onImeAction    = { focusManager.moveFocus(FocusDirection.Down) },
-                    leadingIcon    = {
-                        Icon(Icons.Outlined.Person, null,
-                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
-                    }
-                )
-
-                RegisterField(
-                    label                = "PASSWORD",
-                    value                = uiState.password,
-                    onValueChange        = { viewModel.onIntent(RegisterIntent.PasswordChanged(it)) },
-                    errorText            = uiState.passwordError,
-                    visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
-                                          else PasswordVisualTransformation(),
-                    keyboardType         = KeyboardType.Password,
-                    focusRequester       = passwordFocus,
-                    imeAction            = ImeAction.Next,
-                    onImeAction          = { focusManager.moveFocus(FocusDirection.Down) },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Lock, null,
-                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
-                    },
+                    label = "PASSWORD",
+                    value = uiState.password,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.PasswordChanged(it)) },
+                    errorText = uiState.passwordError,
+                    visualTransformation = if (uiState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardType = KeyboardType.Password,
+                    focusRequester = passwordFocus,
+                    imeAction = ImeAction.Next,
+                    onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                     trailingIcon = {
-                        IconButton(
-                            onClick  = { viewModel.onIntent(RegisterIntent.TogglePasswordVisible) },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.passwordVisible) Icons.Outlined.VisibilityOff
-                                              else Icons.Outlined.Visibility,
-                                contentDescription = "Toggle password",
-                                tint     = OnSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        IconButton(onClick = { viewModel.onIntent(RegisterIntent.TogglePasswordVisible) }) {
+                            Icon(if (uiState.passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, null, tint = OnSurfaceVariant)
                         }
                     }
                 )
 
                 RegisterField(
-                    label                = "CONFIRM PASSWORD",
-                    value                = uiState.confirmPassword,
-                    onValueChange        = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
-                    errorText            = uiState.confirmError,
-                    visualTransformation = if (uiState.confirmVisible) VisualTransformation.None
-                                          else PasswordVisualTransformation(),
-                    keyboardType         = KeyboardType.Password,
-                    focusRequester       = confirmFocus,
-                    imeAction            = ImeAction.Done,
-                    onImeAction          = { viewModel.onIntent(RegisterIntent.RegisterClicked) },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Lock, null,
-                            tint = OnSurfaceVariant, modifier = Modifier.size(20.dp))
-                    },
+                    label = "CONFIRM PASSWORD",
+                    value = uiState.confirmPassword,
+                    onValueChange = { viewModel.onIntent(RegisterIntent.ConfirmChanged(it)) },
+                    errorText = uiState.confirmError,
+                    visualTransformation = if (uiState.confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardType = KeyboardType.Password,
+                    focusRequester = confirmFocus,
+                    imeAction = ImeAction.Done,
+                    onImeAction = { viewModel.onIntent(RegisterIntent.RegisterClicked) },
                     trailingIcon = {
-                        IconButton(
-                            onClick  = { viewModel.onIntent(RegisterIntent.ToggleConfirmVisible) },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.confirmVisible) Icons.Outlined.VisibilityOff
-                                              else Icons.Outlined.Visibility,
-                                contentDescription = "Toggle confirm",
-                                tint     = OnSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        IconButton(onClick = { viewModel.onIntent(RegisterIntent.ToggleConfirmVisible) }) {
+                            Icon(if (uiState.confirmVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, null, tint = OnSurfaceVariant)
                         }
                     }
                 )
 
-                if (uiState.generalError != null) {
-                    Text(
-                        text  = uiState.generalError!!,
-                        color = Error,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-
-                RegisterSoulButton(
-                    text      = "Create Account",
-                    isLoading = uiState.isLoading,
-                    onClick   = { viewModel.onIntent(RegisterIntent.RegisterClicked) }
-                )
+                RegisterSoulButton(text = "Create Account", isLoading = uiState.isLoading, onClick = { viewModel.onIntent(RegisterIntent.RegisterClicked) })
             }
 
-            Spacer(Modifier.height(20.dp))
-
+            Spacer(Modifier.height(24.dp))
             Row {
-                Text(
-                    "Already have an account?  ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariant
-                )
-                Text(
-                    "Sign In",
-                    style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color    = Primary,
-                    modifier = Modifier.clickable { viewModel.onIntent(RegisterIntent.NavigateToLogin) }
-                )
+                Text("Already have an account? ", color = OnSurfaceVariant)
+                Text("Sign In", color = Primary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToLogin() })
             }
 
-            Spacer(Modifier.height(48.dp))
+            // Bottom weight to keep things balanced
+            Spacer(Modifier.weight(1.2f))
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
 
-// ── Private helpers ───────────────────────────────────────────────────────────
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RegisterField(
-    label:                String,
-    value:                String,
-    onValueChange:        (String) -> Unit,
-    errorText:            String?            = null,
-    leadingIcon:          @Composable (() -> Unit)? = null,
-    trailingIcon:         @Composable (() -> Unit)? = null,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    errorText: String? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardType:         KeyboardType = KeyboardType.Text,
-    focusRequester:       FocusRequester? = null,
-    imeAction:            ImeAction = ImeAction.Next,
-    onImeAction:          (() -> Unit)? = null
+    keyboardType: KeyboardType = KeyboardType.Text,
+    focusRequester: FocusRequester? = null,
+    imeAction: ImeAction = ImeAction.Next,
+    onImeAction: (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text     = label,
-            style    = MaterialTheme.typography.labelSmall,
-            color    = if (errorText != null) Error else OnSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp)
-        )
+    val scope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester)
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = if (errorText != null) Error else OnSurfaceVariant)
+        Spacer(Modifier.height(6.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(SurfaceContainerLow)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            leadingIcon?.invoke()
             BasicTextField(
-                value                = value,
-                onValueChange        = onValueChange,
-                singleLine           = true,
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
                 visualTransformation = visualTransformation,
-                keyboardOptions      = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
-                keyboardActions      = KeyboardActions(
-                    onNext = { onImeAction?.invoke() },
-                    onDone = { onImeAction?.invoke() }
-                ),
-                textStyle            = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
-                cursorBrush          = SolidColor(Primary),
-                modifier             = Modifier
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+                keyboardActions = KeyboardActions(onAny = { onImeAction?.invoke() }),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = OnSurface),
+                cursorBrush = SolidColor(Primary),
+                modifier = Modifier
                     .weight(1f)
                     .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-            ) { innerField ->
-                if (value.isEmpty()) {
-                    Text(
-                        text  = label.split(" ").first().lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Outline.copy(alpha = 0.5f)
-                    )
-                }
-                innerField()
-            }
-            trailingIcon?.invoke()
-        }
-        if (errorText != null) {
-            Text(
-                text     = errorText,
-                style    = MaterialTheme.typography.labelSmall,
-                color    = Error,
-                modifier = Modifier.padding(start = 4.dp)
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            scope.launch {
+                                delay(100) // Give the keyboard a moment to start opening
+                                bringIntoViewRequester.bringIntoView()
+                            }
+                        }
+                    }
             )
+            trailingIcon?.invoke()
         }
     }
 }
 
 @Composable
-private fun RegisterSoulButton(
-    text:      String,
-    isLoading: Boolean,
-    onClick:   () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        label       = "btnScale"
-    )
-
+private fun RegisterSoulButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .scale(scale)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Brushes.SoulGradient)
-            .clickable(
-                interactionSource = interactionSource,
-                indication        = null,
-                enabled           = !isLoading,
-                onClick           = onClick
-            ),
+        modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(12.dp)).background(Brushes.SoulGradient).clickable(enabled = !isLoading, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        AnimatedContent(targetState = isLoading, label = "btnContent") { loading ->
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier    = Modifier.size(22.dp),
-                    color       = OnPrimaryContainer,
-                    strokeWidth = 2.5.dp
-                )
-            } else {
-                Text(
-                    text  = text,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 16.sp
-                    ),
-                    color = OnPrimaryContainer
-                )
-            }
-        }
+        if (isLoading) CircularProgressIndicator(color = OnPrimaryContainer, modifier = Modifier.size(24.dp))
+        else Text(text, color = OnPrimaryContainer, fontWeight = FontWeight.Bold)
     }
 }

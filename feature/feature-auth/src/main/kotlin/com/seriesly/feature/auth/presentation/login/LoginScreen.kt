@@ -51,6 +51,7 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -78,6 +79,7 @@ fun LoginScreen(
                     )
                 )
         )
+
         // Ambient glow — bottom-left secondary blob
         Box(
             modifier = Modifier
@@ -94,7 +96,8 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                // IMPORTANT: Scroll first, then IME padding
+                .verticalScroll(scrollState)
                 .imePadding()
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Center,
@@ -173,7 +176,7 @@ fun LoginScreen(
                     value               = uiState.password,
                     onValueChange       = { viewModel.onIntent(LoginIntent.PasswordChanged(it)) },
                     visualTransformation = if (uiState.passwordVisible) VisualTransformation.None
-                                         else PasswordVisualTransformation(),
+                    else PasswordVisualTransformation(),
                     keyboardType        = KeyboardType.Password,
                     focusRequester      = passwordFocus,
                     imeAction           = ImeAction.Done,
@@ -189,7 +192,7 @@ fun LoginScreen(
                         ) {
                             Icon(
                                 imageVector = if (uiState.passwordVisible) Icons.Outlined.VisibilityOff
-                                              else Icons.Outlined.Visibility,
+                                else Icons.Outlined.Visibility,
                                 contentDescription = "Toggle password",
                                 tint   = OnSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
@@ -234,7 +237,7 @@ fun LoginScreen(
     }
 }
 
-// ── Shared Cinematic components (private to auth) ────────────────────────────
+// ── Shared Cinematic components ────────────────────────────
 
 @Composable
 private fun CinematicField(
