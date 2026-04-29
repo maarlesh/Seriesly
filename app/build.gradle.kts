@@ -15,6 +15,12 @@ val localProperties = Properties().also { props ->
         ?.inputStream()?.use { props.load(it) }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.graphics:graphics-path:1.1.0-rc01")
+    }
+}
+
 android {
     namespace = "com.seriesly"
     compileSdk = 35
@@ -23,8 +29,8 @@ android {
         applicationId = "com.maarlesh.seriesly"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 7
+        versionName = "1.0.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "TVDB_API_KEY", "\"\"")
@@ -58,6 +64,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
 

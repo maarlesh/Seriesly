@@ -7,7 +7,11 @@
       "Bash(git stash:*)",
       "Bash(git push:*)",
       "Bash(grep:*)",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "Bash(./gradlew bundleRelease)",
+      "Bash(python3 *)",
+      "Bash(./gradlew :app:dependencies --configuration releaseRuntimeClasspath)",
+      "Bash(curl -s \"https://dl.google.com/dl/android/maven2/androidx/graphics/graphics-path/maven-metadata.xml\")"
     ]
   }
 }
